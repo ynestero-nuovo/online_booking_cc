@@ -116,6 +116,22 @@ function totalDuration(services: Service[]): number {
   return services.reduce((sum, s) => sum + s.durationMin, 0);
 }
 
+/**
+ * Дедуплікація слотів за часом початку (для режиму «будь-який фахівець»): лишаємо
+ * один слот на кожен час (перший за порядком — слоти вже відсортовані за startTime).
+ * Кожен слот несе свій specialistId, тож бронь піде до конкретного лікаря.
+ */
+function dedupeByStartTime(slots: Slot[]): Slot[] {
+  const seen = new Set<string>();
+  const out: Slot[] = [];
+  for (const s of slots) {
+    if (seen.has(s.startTime)) continue;
+    seen.add(s.startTime);
+    out.push(s);
+  }
+  return out;
+}
+
 /** Спеціалісти, які надають УСІ обрані послуги (перетин), з опц. звуженням. */
 function intersectSpecialists(services: Service[], specialistId?: string): string[] {
   const sets = services.map((s) => new Set(s.specialistIds));
@@ -156,7 +172,9 @@ export async function getAvailability(query: AvailabilityQuery): Promise<Availab
     provider.getBusy(query.range),
   ]);
 
-  const slots = computeFreeSlotsForService(shifts, busy, specialistIds, duration, STEP_MIN);
+  const all = computeFreeSlotsForService(shifts, busy, specialistIds, duration, STEP_MIN);
+  // «Будь-який фахівець» (без звуження): один слот на час, щоб не дублювати кнопки.
+  const slots = query.specialistId ? all : dedupeByStartTime(all);
 
   return {
     serviceIds: query.serviceIds,

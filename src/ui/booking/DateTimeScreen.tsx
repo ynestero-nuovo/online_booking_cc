@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Slot } from "@/domain/types";
 import Overlay from "./Overlay";
 import {
@@ -37,6 +37,17 @@ export default function DateTimeScreen({
   const initialMonth = firstDate ? monthOf(firstDate) : monthOf(new Date().toISOString().slice(0, 10));
   const [view, setView] = useState(initialMonth);
   const cal = useMemo(() => buildCalendar(view.year, view.month), [view]);
+
+  // Слоти вантажаться асинхронно: коли firstDate з'являється вперше — один раз
+  // синхронізуємо видимий місяць на місяць найближчого вільного дня. Далі не
+  // чіпаємо, щоб не заважати ручній навігації користувача.
+  const synced = useRef(false);
+  useEffect(() => {
+    if (!synced.current && firstDate) {
+      setView(monthOf(firstDate));
+      synced.current = true;
+    }
+  }, [firstDate]);
 
   // Межі навігації місяцями.
   const minMonth = firstDate ? monthOf(firstDate) : view;

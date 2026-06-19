@@ -141,8 +141,12 @@ export function createMockProvider(): BookingProvider {
       };
       bookings.push(booking);
       // Резервуємо час, аби наступні запити доступності його враховували.
-      // Тривалість бере перша послуга; для мока цього достатньо.
-      const durationMin = SERVICES.find((s) => s.id === request.serviceIds[0])?.durationMin ?? 60;
+      // Сумарна тривалість усіх обраних послуг (узгоджено з booking-service).
+      const durationMin =
+        request.serviceIds.reduce(
+          (sum, id) => sum + (SERVICES.find((s) => s.id === id)?.durationMin ?? 0),
+          0,
+        ) || 60;
       const start = new Date(request.startTime);
       const end = new Date(start.getTime() + durationMin * 60_000);
       busy.push({

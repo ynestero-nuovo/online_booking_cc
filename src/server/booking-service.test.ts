@@ -46,6 +46,12 @@ describe("getAvailability", () => {
     expect(result.slots.length).toBeGreaterThan(0);
   });
 
+  it("режим «будь-який фахівець» не дублює слоти за часом", async () => {
+    const result = await getAvailability({ serviceIds: SERVICE_IDS, range: next7Days() });
+    const starts = result.slots.map((s) => s.startTime);
+    expect(new Set(starts).size).toBe(starts.length);
+  });
+
   it("404 для невідомої послуги", async () => {
     await expect(
       getAvailability({ serviceIds: ["svc-none"], range: next7Days() }),
@@ -87,5 +93,32 @@ describe("createBooking", () => {
     const a = await createBooking(req2, "key-1");
     const b = await createBooking(req2, "key-1");
     expect(b.id).toBe(a.id);
+  });
+
+  it("бронь кількох послуг резервує СУМАРНУ тривалість (не лише першої)", async () => {
+    // Беремо конкретного фахівця; дві 60-хв послуги = 120-хв вікно.
+    const av = await getAvailability({
+      serviceIds: ["svc-0", "svc-1"],
+      specialistId: "sp-samoukova",
+      range: next7Days(),
+    });
+    expect(av.durationMin).toBe(120);
+    const slot = av.slots[0];
+
+    await createBooking({
+      specialistId: "sp-samoukova",
+      serviceIds: ["svc-0", "svc-1"],
+      startTime: slot.startTime,
+      patient: { name: "Тест", phone: "+380501234567" },
+    });
+
+    // Початок другої послуги (T+60) має бути заблокований — інакше резерв був лише 60 хв.
+    const t60 = new Date(Date.parse(slot.startTime) + 60 * 60_000).toISOString();
+    const after = await getAvailability({
+      serviceIds: ["svc-0"],
+      specialistId: "sp-samoukova",
+      range: next7Days(),
+    });
+    expect(after.slots.some((s) => s.startTime === t60)).toBe(false);
   });
 });
