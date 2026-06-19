@@ -31,6 +31,13 @@ function addDaysIso(iso: string, days: number): string {
 function initials(name: string): string {
   return name.split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
 }
+/** UUID із фолбеком: crypto.randomUUID доступний лише в secure context (HTTPS/localhost). */
+function idempotencyKey(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `bk-${Date.now()}-${Math.random().toString(16).slice(2)}-${Math.random().toString(16).slice(2)}`;
+}
 
 export default function BookingFlow() {
   const [screen, setScreen] = useState<Screen>("home");
@@ -153,7 +160,7 @@ export default function BookingFlow() {
           patient: { name: data.name, phone: data.phone },
           comment: data.comment || undefined,
         },
-        crypto.randomUUID(),
+        idempotencyKey(),
       );
       setBooking(created);
       setScreen("success");
