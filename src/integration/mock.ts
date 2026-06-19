@@ -17,6 +17,7 @@ import type {
 } from "@/domain/types";
 import type { BookingProvider, DateRange } from "./ports";
 import { CATALOG_CATEGORIES, CATALOG_SERVICES } from "./catalog";
+import { kyivWallToUtcIso } from "@/lib/timezone";
 
 const SPECIALISTS: Specialist[] = [
   { id: "sp-kovbasa", name: "Катерина Ковбаса", alias: "Катерина Ковбаса", role: "Головний лікар" },
@@ -34,7 +35,7 @@ const SERVICES: Service[] = CATALOG_SERVICES.map((s) => ({
   specialistIds: SPECIALISTS.map((sp) => sp.id),
 }));
 
-/** Робочий день у годинах UTC: 10:00–20:00, без вихідних. */
+/** Робочий день у КИЇВСЬКИХ годинах: 10:00–20:00, без вихідних. */
 const SHIFT_START_HOUR = 10;
 const SHIFT_END_HOUR = 20;
 
@@ -54,12 +55,11 @@ function isoDate(d: Date): IsoDate {
   return d.toISOString().slice(0, 10);
 }
 
-/** ISO-datetime для конкретної дати + години (UTC). */
+/** ISO-datetime (UTC) для київської настінної години на конкретну дату. */
 function isoAt(day: Date, hour: number): string {
-  const d = new Date(
-    Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), hour),
-  );
-  return d.toISOString();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const wall = `${isoDate(day)} ${pad(hour)}:00:00`;
+  return kyivWallToUtcIso(wall);
 }
 
 /** Чи входить дата у діапазон (включно). */

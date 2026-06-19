@@ -4,11 +4,12 @@
  */
 
 import type { Slot, TimeGroup } from "@/domain/types";
+import { kyivDate, kyivHour } from "@/lib/timezone";
 
 const timeFmt = new Intl.DateTimeFormat("uk-UA", {
   hour: "2-digit",
   minute: "2-digit",
-  timeZone: "UTC",
+  timeZone: "Europe/Kyiv",
 });
 
 const dateFmt = new Intl.DateTimeFormat("uk-UA", {
@@ -60,16 +61,16 @@ export const TIME_GROUP_LABEL: Record<TimeGroup, string> = {
 };
 export const TIME_GROUP_ORDER: TimeGroup[] = ["morning", "afternoon", "evening"];
 
-/** UTC-дата слота "YYYY-MM-DD". */
+/** Київська дата слота "YYYY-MM-DD". */
 export function slotDate(slot: Slot): string {
-  return slot.startTime.slice(0, 10);
+  return kyivDate(slot.startTime);
 }
 
-/** Групує слоти одного дня на Ранок/День/Вечір (за UTC-годиною початку). */
+/** Групує слоти одного дня на Ранок/День/Вечір (за КИЇВСЬКОЮ годиною початку). */
 export function groupSlots(slots: Slot[]): Record<TimeGroup, Slot[]> {
   const groups: Record<TimeGroup, Slot[]> = { morning: [], afternoon: [], evening: [] };
   for (const s of slots) {
-    const hour = new Date(s.startTime).getUTCHours();
+    const hour = kyivHour(s.startTime);
     const g: TimeGroup = hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening";
     groups[g].push(s);
   }
