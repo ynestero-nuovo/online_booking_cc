@@ -61,7 +61,7 @@ UI → BFF (серверні роути `app/api`) → ports (інтерфейс
 - [x] **Крок 1** — CLAUDE.md, скафолд Next.js (App Router, TS strict, Tailwind), Vitest,
   структура папок, `.env.example`, `.gitignore`, git init + commit.
 - [x] **Крок 2** — `src/domain/types.ts`: доменні типи (вище), без залежностей і без логіки.
-- [ ] **Крок 3** — `src/integration/ports.ts` (інтерфейс `BookingProvider`: `getSpecialists`,
+- [x] **Крок 3** — `src/integration/ports.ts` (інтерфейс `BookingProvider`: `getSpecialists`,
   `getCategories`, `getServices`, `getShifts(range)`, `getBusy(range)`, `createBooking`)
   + `src/integration/mock.ts` (MockProvider з реалістичними фейковими даними: 4–5
   спеціалістів різних ролей, 2–3 категорії з послугами, зміни на 7 днів, кілька busy;
