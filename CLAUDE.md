@@ -1,5 +1,22 @@
 ## Project
-Мобільний PWA онлайн-запису для салону краси, який проксує запити до зовнішньої CRM Cliniccards.
+Мобільний PWA онлайн-запису для клініки естетичної медицини/косметології «Nuovo skin»
+(вул. Набережно-Хрещатицька 25), який проксує запити до зовнішньої CRM Cliniccards.
+
+## Status (станом на 2026-06-19)
+Повний статус і план — у `docs/ROADMAP.md`. Коротко:
+- Кроки 1–10 виконано. UI у стилі bookon: головна = форма з 3 полів
+  (Фахівець/Послуга/Дата і час), множинний вибір послуг, місячний календар,
+  бренд `#8272a3`. Каталог — 26 категорій / 227 послуг із прайсу
+  (`src/integration/catalog.ts`, генерується `scripts/generate-catalog.ps1`).
+- Cliniccards-адаптер реалізовано і **звірено наживо**: auth `Token`, схеми
+  shifts/visits/spaces/patients, тестовий візит успішно створено в CRM. Реальні
+  `doctor_id` — у `src/integration/cliniccards/catalog.ts` (поки «всі роблять усе»).
+- `.env` зараз `PROVIDER=cliniccards` → застосунок пише в РЕАЛЬНУ CRM. Для безпечної
+  розробки став `PROVIDER=mock`.
+- Час домену — UTC; UI показує київський (`src/lib/timezone.ts`). Service worker —
+  лише в проді.
+- Незакриті TODO: ролі лікарів (API не дає), точна прив'язка послуга→лікар, фото
+  майстрів; прибрати тестовий візит 57792342 і пацієнта 16036678 у Cliniccards.
 
 ## Stack
 Next.js (App Router), TypeScript (strict), Tailwind CSS, Vitest.
