@@ -87,7 +87,24 @@ UI → BFF (серверні роути `app/api`) → ports (інтерфейс
 - [x] **Крок 8** — PWA + крафт: manifest + service worker (інсталяція, display standalone);
   safe-area через `env(safe-area-inset-*)`; font-size 16px на інпутах (щоб iOS не зумив);
   вимкнути tap-highlight; інерційний скрол; скелетони замість спінерів.
-- [ ] **Крок 9** — Реальний Cliniccards: `src/integration/cliniccards/client.ts` (HTTP з
+- [x] **Крок 9** — Реальний Cliniccards: `src/integration/cliniccards/client.ts` (HTTP з
   ключем з env, server-only) + `mapper.ts` (сирі відповіді Cliniccards → доменні типи);
   `CliniccardsProvider` у фабрику; `PROVIDER=cliniccards`; перевірка проти реальних
   прикладів відповідей. Фронт і контракт `/api` не змінюються.
+
+## Нотатки та припущення Кроку 9
+Реалізовано проти **документації Cliniccards (Postman)**, а не проти живих відповідей —
+лишилося звірити на реальному акаунті:
+- Auth `Token`-заголовком; конверт `{ data, result, error }`; база `https://cliniccards.com/api`.
+- В API **немає** ендпоінтів послуг/категорій → каталог локальний:
+  `src/integration/cliniccards/catalog.ts` (TODO: реальні `doctor_id` у `specialistIds`).
+- Спеціалісти виводяться з унікальних `doctor_id` у `/schedule-shifts` (вікно 60 днів);
+  `role`/`alias` = ім'я лікаря (інших полів API не дає).
+- Час API — київський «настінний» → конвертуємо в UTC (`timezone.ts`, з DST).
+- `getBusy` = `/visits` (крім статусу `CANCELLED`) + `/schedule-spaces`; резерви прив'язані
+  до кабінету, тож лікаря резолвимо через зміни в тому ж кабінеті, що перетинаються за часом.
+- `createBooking`: пошук пацієнта за телефоном → за потреби `POST /patients` → `POST /visits`
+  зі статусом `BOOKING`; кабінет беремо зі зміни лікаря на цю дату; `time_*` кратно 5 хв.
+- Запити до API розширюємо на ±1 день, щоб не втратити зміни на межі доби (UTC vs Kyiv).
+- **Треба підтвердити вживу:** точні поля `/schedule-spaces`; чи `/patients?phone=` повертає
+  масив; чи `BOOKING` — правильний статус для онлайн-запису; формат помилок.

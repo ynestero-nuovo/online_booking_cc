@@ -8,6 +8,7 @@
  */
 
 import { createMockProvider } from "@/integration/mock";
+import { createCliniccardsProvider } from "@/integration/cliniccards/provider";
 import type { BookingProvider } from "@/integration/ports";
 
 export type ProviderName = "mock" | "cliniccards";
@@ -56,8 +57,8 @@ export function getProvider(): BookingProvider {
           "PROVIDER=cliniccards потребує CLINICCARDS_API_KEY та CLINICCARDS_BASE_URL у .env.",
         );
       }
-      // Реальний CliniccardsProvider з'явиться у Кроці 9.
-      throw new Error("CliniccardsProvider ще не реалізовано (Крок 9).");
+      cached = createCliniccardsProvider({ apiKey, baseUrl });
+      return cached;
     }
     case "mock":
     default:
