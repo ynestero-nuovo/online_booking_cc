@@ -15,7 +15,8 @@ function next7Days(): DateRange {
   return { from, to: toDate.toISOString().slice(0, 10) };
 }
 
-const SERVICE_ID = "svc-mani-classic";
+// svc-0 = "Консультація дерматологічна" (60 хв) у згенерованому каталозі.
+const SERVICE_ID = "svc-0";
 
 describe("getServicesWithCategories", () => {
   it("повертає категорії у порядку order", async () => {

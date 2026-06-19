@@ -16,63 +16,21 @@ import type {
   Specialist,
 } from "@/domain/types";
 import type { BookingProvider, DateRange } from "./ports";
+import { CATALOG_CATEGORIES, CATALOG_SERVICES } from "./catalog";
 
 const SPECIALISTS: Specialist[] = [
-  { id: "sp-anna", name: "Анна Коваль", alias: "Анна", role: "Манікюр майстер" },
-  { id: "sp-olha", name: "Ольга Шевченко", alias: "Ольга", role: "Манікюр топмайстер" },
-  { id: "sp-iryna", name: "Ірина Бондар", alias: "Ірина", role: "Педикюр майстер" },
-  { id: "sp-maria", name: "Марія Ткаченко", alias: "Марія", role: "Топмайстер" },
-  { id: "sp-kateryna", name: "Катерина Лис", alias: "Катя", role: "Манікюр майстер" },
+  { id: "sp-kateryna", name: "Катерина", alias: "Катерина", role: "Головний лікар" },
+  { id: "sp-anna", name: "Анна Коваль", alias: "Анна", role: "Лікар-дерматолог" },
+  { id: "sp-olha", name: "Ольга Шевченко", alias: "Ольга", role: "Лікар-косметолог" },
 ];
 
-const CATEGORIES: Category[] = [
-  { id: "cat-top", name: "Топ-послуги", order: 0 },
-  { id: "cat-mani", name: "Манікюр", order: 1 },
-  { id: "cat-pedi", name: "Педикюр", order: 2 },
-];
+const CATEGORIES: Category[] = CATALOG_CATEGORIES;
 
-const SERVICES: Service[] = [
-  {
-    id: "svc-mani-classic",
-    name: "Класичний манікюр",
-    categoryId: "cat-mani",
-    durationMin: 60,
-    price: 350,
-    specialistIds: ["sp-anna", "sp-kateryna"],
-  },
-  {
-    id: "svc-mani-gel",
-    name: "Манікюр + гель-лак",
-    categoryId: "cat-mani",
-    durationMin: 90,
-    price: 500,
-    specialistIds: ["sp-anna", "sp-olha", "sp-kateryna"],
-  },
-  {
-    id: "svc-mani-top",
-    name: "Манікюр у топмайстра",
-    categoryId: "cat-top",
-    durationMin: 90,
-    price: 700,
-    specialistIds: ["sp-olha", "sp-maria"],
-  },
-  {
-    id: "svc-pedi-classic",
-    name: "Класичний педикюр",
-    categoryId: "cat-pedi",
-    durationMin: 90,
-    price: 600,
-    specialistIds: ["sp-iryna"],
-  },
-  {
-    id: "svc-pedi-spa",
-    name: "SPA-педикюр",
-    categoryId: "cat-pedi",
-    durationMin: 120,
-    price: 800,
-    specialistIds: ["sp-iryna", "sp-maria"],
-  },
-];
+// Поки невідомо, хто яку послугу надає → у моку кожну надають усі спеціалісти.
+const SERVICES: Service[] = CATALOG_SERVICES.map((s) => ({
+  ...s,
+  specialistIds: SPECIALISTS.map((sp) => sp.id),
+}));
 
 /** Робочий день у годинах UTC: 09:00–18:00. */
 const SHIFT_START_HOUR = 9;
@@ -83,11 +41,9 @@ const HORIZON_DAYS = 7;
 
 /** Вихідний день кожного спеціаліста (0 = неділя ... 6 = субота). */
 const DAY_OFF: Record<string, number> = {
+  "sp-kateryna": 0, // неділя
   "sp-anna": 1, // понеділок
   "sp-olha": 2,
-  "sp-iryna": 3,
-  "sp-maria": 0, // неділя
-  "sp-kateryna": 4,
 };
 
 /** Початок сьогоднішнього дня в UTC. */
@@ -147,17 +103,17 @@ function buildBusy(): Busy[] {
   day2.setUTCDate(base.getUTCDate() + 2);
 
   return [
-    // Анна: ранковий візит сьогодні
-    { specialistId: "sp-anna", startTime: isoAt(day0, 9), endTime: isoAt(day0, 10) },
+    // Катерина: ранковий візит сьогодні
+    { specialistId: "sp-kateryna", startTime: isoAt(day0, 9), endTime: isoAt(day0, 10) },
     // Анна: обідній резерв сьогодні
     { specialistId: "sp-anna", startTime: isoAt(day0, 13), endTime: isoAt(day0, 14) },
     // Ольга: візит завтра
     { specialistId: "sp-olha", startTime: isoAt(day1, 11), endTime: isoAt(day1, 12) },
-    // Ірина: два візити підряд завтра
-    { specialistId: "sp-iryna", startTime: isoAt(day1, 10), endTime: isoAt(day1, 12) },
-    { specialistId: "sp-iryna", startTime: isoAt(day1, 12), endTime: isoAt(day1, 14) },
-    // Марія: пізній візит післязавтра
-    { specialistId: "sp-maria", startTime: isoAt(day2, 16), endTime: isoAt(day2, 18) },
+    // Анна: два візити підряд завтра
+    { specialistId: "sp-anna", startTime: isoAt(day1, 10), endTime: isoAt(day1, 12) },
+    { specialistId: "sp-anna", startTime: isoAt(day1, 12), endTime: isoAt(day1, 14) },
+    // Катерина: пізній візит післязавтра
+    { specialistId: "sp-kateryna", startTime: isoAt(day2, 16), endTime: isoAt(day2, 18) },
   ];
 }
 
