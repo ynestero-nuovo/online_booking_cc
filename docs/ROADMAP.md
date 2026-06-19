@@ -75,7 +75,7 @@ UI → BFF (серверні роути `app/api`) → ports (інтерфейс
 - [x] **Крок 5** — `src/lib/config.ts`: читає env (`CLINICCARDS_API_KEY`,
   `CLINICCARDS_BASE_URL`, `PROVIDER=mock|cliniccards`), фабрика повертає провайдера;
   дефолт mock; ключ лише на сервері.
-- [ ] **Крок 6** — BFF роути: `GET /api/specialists`; `GET /api/services` (з категоріями);
+- [x] **Крок 6** — BFF роути: `GET /api/specialists`; `GET /api/services` (з категоріями);
   `GET /api/availability` (date або діапазон, опц. `specialistId`, опц. `serviceId` →
   згруповані слоти через рушій з Кроку 4); `POST /api/bookings` (zod-валідація; перед
   створенням ще раз перевірити що слот вільний → інакше 409; ідемпотентність через
