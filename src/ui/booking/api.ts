@@ -7,11 +7,14 @@ import type {
   Booking,
   BookingRequest,
   Category,
-  GroupedSlots,
   Service,
   Slot,
   Specialist,
 } from "@/domain/types";
+
+export interface SpecialistWithAvailability extends Specialist {
+  nearestFreeDate: string | null;
+}
 
 export interface ServicesResponse {
   categories: Category[];
@@ -19,11 +22,10 @@ export interface ServicesResponse {
 }
 
 export interface AvailabilityResponse {
-  serviceId: string;
+  serviceIds: string[];
   durationMin: number;
   range: { from: string; to: string };
   slots: Slot[];
-  groups: GroupedSlots;
 }
 
 async function getJson<T>(url: string): Promise<T> {
@@ -35,8 +37,8 @@ async function getJson<T>(url: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export async function fetchSpecialists(): Promise<Specialist[]> {
-  const data = await getJson<{ specialists: Specialist[] }>("/api/specialists");
+export async function fetchSpecialists(): Promise<SpecialistWithAvailability[]> {
+  const data = await getJson<{ specialists: SpecialistWithAvailability[] }>("/api/specialists");
   return data.specialists;
 }
 
@@ -45,11 +47,16 @@ export async function fetchServices(): Promise<ServicesResponse> {
 }
 
 export async function fetchAvailability(params: {
-  serviceId: string;
-  date: string;
+  serviceIds: string[];
+  from: string;
+  to: string;
   specialistId?: string;
 }): Promise<AvailabilityResponse> {
-  const qs = new URLSearchParams({ serviceId: params.serviceId, date: params.date });
+  const qs = new URLSearchParams({
+    serviceIds: params.serviceIds.join(","),
+    from: params.from,
+    to: params.to,
+  });
   if (params.specialistId) qs.set("specialistId", params.specialistId);
   return getJson<AvailabilityResponse>(`/api/availability?${qs.toString()}`);
 }

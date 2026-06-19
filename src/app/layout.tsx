@@ -14,17 +14,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Онлайн-запис",
-  description: "Онлайн-запис до салону краси",
+  title: "Nuovo skin — онлайн-запис",
+  description: "Онлайн-запис до клініки Nuovo skin",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Запис",
+    title: "Nuovo skin",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#18181b",
+  themeColor: "#7a0f14",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,

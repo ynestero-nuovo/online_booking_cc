@@ -2,15 +2,15 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Онлайн-запис до салону",
-    short_name: "Запис",
-    description: "Швидкий онлайн-запис до салону краси",
+    name: "Nuovo skin — онлайн-запис",
+    short_name: "Nuovo skin",
+    description: "Онлайн-запис до клініки Nuovo skin",
     start_url: "/",
     scope: "/",
     display: "standalone",
     orientation: "portrait",
     background_color: "#ffffff",
-    theme_color: "#18181b",
+    theme_color: "#7a0f14",
     lang: "uk",
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
