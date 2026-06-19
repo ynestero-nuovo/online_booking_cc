@@ -69,7 +69,7 @@ function makePng(size, { bg, fg, circle }) {
 
 mkdirSync(OUT_DIR, { recursive: true });
 
-const bg = [122, 15, 20]; // brand deep red
+const bg = [130, 114, 163]; // brand #8272a3
 const fg = [255, 255, 255]; // white circle
 
 writeFileSync(resolve(OUT_DIR, "icon-192.png"), makePng(192, { bg, fg, circle: true }));

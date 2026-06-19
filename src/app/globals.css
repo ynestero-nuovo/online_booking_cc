@@ -3,9 +3,9 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  /* Фірмова темно-червона тема Nuovo skin. */
-  --brand: #7a0f14;
-  --brand-dark: #5c0b10;
+  /* Фірмова тема Nuovo skin. */
+  --brand: #8272a3;
+  --brand-dark: #685b82;
 }
 
 @theme inline {
