@@ -57,6 +57,11 @@ function mapStatus(raw: string): BookingStatus {
   }
 }
 
+/** Лишаємо тільки цифри: Cliniccards шукає/зберігає телефон без не-цифрових символів. */
+function normalizePhone(phone: string): string {
+  return phone.replace(/\D/g, "");
+}
+
 function splitName(full: string): { firstname: string; lastname: string } {
   const parts = full.trim().split(/\s+/);
   if (parts.length >= 2) {
@@ -117,16 +122,13 @@ export function createCliniccardsProvider(opts: CliniccardsClientOptions): Booki
         duration += d;
       }
 
-      // 1. Пацієнт: знайти за телефоном або створити.
-      const found = await client.findPatientByPhone(request.patient.phone);
+      // 1. Пацієнт: знайти за телефоном (нормалізованим) або створити.
+      const phone = normalizePhone(request.patient.phone);
+      const found = phone ? await client.findPatientByPhone(phone) : [];
       let patientId = found[0]?.patient_id;
       if (!patientId) {
         const { firstname, lastname } = splitName(request.patient.name);
-        const created = await client.createPatient({
-          firstname,
-          lastname,
-          phone: request.patient.phone,
-        });
+        const created = await client.createPatient({ firstname, lastname, phone });
         patientId = created.patient_id;
       }
 
