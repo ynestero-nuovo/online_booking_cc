@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { getSpecialists } from "@/server/booking-service";
+import { getSpecialistsWithAvailability } from "@/server/booking-service";
 
 export async function GET() {
-  const specialists = await getSpecialists();
+  const specialists = await getSpecialistsWithAvailability();
   return NextResponse.json({ specialists });
 }

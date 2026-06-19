@@ -19,9 +19,11 @@ import type { BookingProvider, DateRange } from "./ports";
 import { CATALOG_CATEGORIES, CATALOG_SERVICES } from "./catalog";
 
 const SPECIALISTS: Specialist[] = [
-  { id: "sp-kateryna", name: "Катерина", alias: "Катерина", role: "Головний лікар" },
-  { id: "sp-anna", name: "Анна Коваль", alias: "Анна", role: "Лікар-дерматолог" },
-  { id: "sp-olha", name: "Ольга Шевченко", alias: "Ольга", role: "Лікар-косметолог" },
+  { id: "sp-kovbasa", name: "Катерина Ковбаса", alias: "Катерина Ковбаса", role: "Головний лікар" },
+  { id: "sp-samoukova", name: "Вікторія Самоукова", alias: "Вікторія Самоукова", role: "Лікар" },
+  { id: "sp-kashytska", name: "Ольга Кашицька", alias: "Ольга Кашицька", role: "Лікар" },
+  { id: "sp-movchan", name: "Тетяна Мовчан", alias: "Тетяна Мовчан", role: "Лікар" },
+  { id: "sp-kalashnik", name: "Катерина Калашнік", alias: "Катерина Калашнік", role: "Косметолог" },
 ];
 
 const CATEGORIES: Category[] = CATALOG_CATEGORIES;
@@ -32,19 +34,12 @@ const SERVICES: Service[] = CATALOG_SERVICES.map((s) => ({
   specialistIds: SPECIALISTS.map((sp) => sp.id),
 }));
 
-/** Робочий день у годинах UTC: 09:00–18:00. */
-const SHIFT_START_HOUR = 9;
-const SHIFT_END_HOUR = 18;
+/** Робочий день у годинах UTC: 10:00–20:00, без вихідних. */
+const SHIFT_START_HOUR = 10;
+const SHIFT_END_HOUR = 20;
 
 /** Скільки днів уперед генерувати зміни (рахуючи від сьогодні). */
-const HORIZON_DAYS = 7;
-
-/** Вихідний день кожного спеціаліста (0 = неділя ... 6 = субота). */
-const DAY_OFF: Record<string, number> = {
-  "sp-kateryna": 0, // неділя
-  "sp-anna": 1, // понеділок
-  "sp-olha": 2,
-};
+const HORIZON_DAYS = 60;
 
 /** Початок сьогоднішнього дня в UTC. */
 function startOfTodayUtc(): Date {
@@ -79,9 +74,7 @@ function buildShifts(): Shift[] {
   for (let offset = 0; offset < HORIZON_DAYS; offset++) {
     const day = new Date(base);
     day.setUTCDate(base.getUTCDate() + offset);
-    const weekday = day.getUTCDay();
     for (const sp of SPECIALISTS) {
-      if (DAY_OFF[sp.id] === weekday) continue;
       shifts.push({
         specialistId: sp.id,
         date: isoDate(day),
@@ -103,17 +96,17 @@ function buildBusy(): Busy[] {
   day2.setUTCDate(base.getUTCDate() + 2);
 
   return [
-    // Катерина: ранковий візит сьогодні
-    { specialistId: "sp-kateryna", startTime: isoAt(day0, 9), endTime: isoAt(day0, 10) },
-    // Анна: обідній резерв сьогодні
-    { specialistId: "sp-anna", startTime: isoAt(day0, 13), endTime: isoAt(day0, 14) },
-    // Ольга: візит завтра
-    { specialistId: "sp-olha", startTime: isoAt(day1, 11), endTime: isoAt(day1, 12) },
-    // Анна: два візити підряд завтра
-    { specialistId: "sp-anna", startTime: isoAt(day1, 10), endTime: isoAt(day1, 12) },
-    { specialistId: "sp-anna", startTime: isoAt(day1, 12), endTime: isoAt(day1, 14) },
-    // Катерина: пізній візит післязавтра
-    { specialistId: "sp-kateryna", startTime: isoAt(day2, 16), endTime: isoAt(day2, 18) },
+    // Ковбаса: ранковий візит сьогодні
+    { specialistId: "sp-kovbasa", startTime: isoAt(day0, 10), endTime: isoAt(day0, 11) },
+    // Калашнік: обідній резерв сьогодні
+    { specialistId: "sp-kalashnik", startTime: isoAt(day0, 14), endTime: isoAt(day0, 15) },
+    // Самоукова: візит завтра
+    { specialistId: "sp-samoukova", startTime: isoAt(day1, 12), endTime: isoAt(day1, 13) },
+    // Кашицька: два візити підряд завтра
+    { specialistId: "sp-kashytska", startTime: isoAt(day1, 11), endTime: isoAt(day1, 13) },
+    { specialistId: "sp-kashytska", startTime: isoAt(day1, 13), endTime: isoAt(day1, 15) },
+    // Мовчан: пізній візит післязавтра
+    { specialistId: "sp-movchan", startTime: isoAt(day2, 18), endTime: isoAt(day2, 20) },
   ];
 }
 

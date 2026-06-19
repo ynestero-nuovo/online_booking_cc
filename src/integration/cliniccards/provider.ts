@@ -109,9 +109,12 @@ export function createCliniccardsProvider(opts: CliniccardsClientOptions): Booki
     },
 
     async createBooking(request: BookingRequest): Promise<Booking> {
-      const duration = serviceDurationMin(request.serviceIds[0]);
-      if (duration === undefined) {
-        throw new Error(`Невідома послуга у каталозі: ${request.serviceIds[0]}`);
+      // Кілька послуг в одному візиті → сумарна тривалість.
+      let duration = 0;
+      for (const id of request.serviceIds) {
+        const d = serviceDurationMin(id);
+        if (d === undefined) throw new Error(`Невідома послуга у каталозі: ${id}`);
+        duration += d;
       }
 
       // 1. Пацієнт: знайти за телефоном або створити.

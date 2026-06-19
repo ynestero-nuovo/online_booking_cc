@@ -14,15 +14,19 @@ const isoDateTime = z
   .string()
   .refine((v) => !Number.isNaN(Date.parse(v)), "Очікується коректний ISO-datetime.");
 
-/** Параметри запиту доступності (date АБО from+to). */
+/** Параметри запиту доступності (date АБО from+to). serviceIds — через кому. */
 export const availabilityQuerySchema = z
   .object({
-    serviceId: z.string().min(1),
+    serviceIds: z
+      .string()
+      .min(1)
+      .transform((s) => s.split(",").map((x) => x.trim()).filter(Boolean)),
     specialistId: z.string().min(1).optional(),
     date: isoDate.optional(),
     from: isoDate.optional(),
     to: isoDate.optional(),
   })
+  .refine((q) => q.serviceIds.length > 0, { message: "Потрібна щонайменше одна послуга." })
   .refine((q) => Boolean(q.date) || (Boolean(q.from) && Boolean(q.to)), {
     message: "Вкажіть `date` або пару `from`+`to`.",
   })

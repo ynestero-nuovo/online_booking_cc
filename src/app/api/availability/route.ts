@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const result = await getAvailability({
-      serviceId: q.serviceId,
+      serviceIds: q.serviceIds,
       specialistId: q.specialistId,
       range,
     });

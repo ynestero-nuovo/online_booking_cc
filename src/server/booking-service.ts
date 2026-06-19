@@ -4,6 +4,9 @@
  * Поєднує провайдера даних (`getProvider`) з чистим рушієм доступності
  * (`src/domain/availability.ts`). Роути `app/api` мають лишатися тонкими й
  * викликати ці функції. Час — ISO/UTC.
+ *
+ * Множинний вибір: за раз можна обрати кілька послуг — тривалість сумується, а
+ * шукаємо лише спеціалістів, які надають УСІ обрані послуги (перетин).
  */
 
 import {
@@ -16,6 +19,7 @@ import type {
   BookingRequest,
   Category,
   GroupedSlots,
+  IsoDate,
   Service,
   Slot,
   Specialist,
@@ -25,10 +29,62 @@ import type { DateRange } from "@/integration/ports";
 
 /** Крок сітки часу у хвилинах (на скільки дробимо зміну). */
 export const STEP_MIN = 30;
+/** Дефолтна тривалість для оцінки «найближчого вільного дня» (послуга ще не обрана). */
+export const DEFAULT_SLOT_MIN = 30;
+/** Горизонт пошуку «найближчого вільного дня», днів. */
+const NEAREST_HORIZON_DAYS = 60;
 
-export async function getSpecialists(): Promise<Specialist[]> {
-  return getProvider().getSpecialists();
+/** Кастомна помилка з HTTP-статусом для роутів. */
+export class HttpError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = "HttpError";
+  }
 }
+
+function addDays(isoDate: IsoDate, days: number): IsoDate {
+  const ms = Date.parse(`${isoDate}T00:00:00Z`) + days * 86_400_000;
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
+function todayUtc(): IsoDate {
+  return new Date().toISOString().slice(0, 10);
+}
+
+// ───────────────────────── Спеціалісти ─────────────────────────
+
+export interface SpecialistWithAvailability extends Specialist {
+  /** Найближча дата з вільним слотом (за дефолтною тривалістю) або null. */
+  nearestFreeDate: IsoDate | null;
+}
+
+/**
+ * Спеціалісти + найближчий вільний день кожного. День рахуємо за дефолтною
+ * тривалістю слота, бо на цьому екрані послуга ще не обрана.
+ */
+export async function getSpecialistsWithAvailability(): Promise<SpecialistWithAvailability[]> {
+  const provider = getProvider();
+  const from = todayUtc();
+  const range: DateRange = { from, to: addDays(from, NEAREST_HORIZON_DAYS) };
+
+  const [specialists, shifts, busy] = await Promise.all([
+    provider.getSpecialists(),
+    provider.getShifts(range),
+    provider.getBusy(range),
+  ]);
+
+  return specialists.map((sp) => {
+    const mineShifts = shifts.filter((s) => s.specialistId === sp.id);
+    const free = computeFreeSlots(mineShifts, busy, DEFAULT_SLOT_MIN, STEP_MIN);
+    const nearestFreeDate = free.length > 0 ? free[0].startTime.slice(0, 10) : null;
+    return { ...sp, nearestFreeDate };
+  });
+}
+
+// ───────────────────────── Послуги ─────────────────────────
 
 export interface ServicesResult {
   categories: Category[];
@@ -45,82 +101,79 @@ export async function getServicesWithCategories(): Promise<ServicesResult> {
   return { categories, services };
 }
 
+async function resolveServices(serviceIds: string[]): Promise<Service[]> {
+  if (serviceIds.length === 0) throw new HttpError(400, "Не обрано жодної послуги.");
+  const all = await getProvider().getServices();
+  return serviceIds.map((id) => {
+    const svc = all.find((s) => s.id === id);
+    if (!svc) throw new HttpError(404, `Послугу ${id} не знайдено.`);
+    return svc;
+  });
+}
+
+/** Сумарна тривалість обраних послуг. */
+function totalDuration(services: Service[]): number {
+  return services.reduce((sum, s) => sum + s.durationMin, 0);
+}
+
+/** Спеціалісти, які надають УСІ обрані послуги (перетин), з опц. звуженням. */
+function intersectSpecialists(services: Service[], specialistId?: string): string[] {
+  const sets = services.map((s) => new Set(s.specialistIds));
+  const intersection = [...sets[0]].filter((id) => sets.every((set) => set.has(id)));
+  if (!specialistId) return intersection;
+  if (!intersection.includes(specialistId)) {
+    throw new HttpError(400, "Обраний спеціаліст не надає всі обрані послуги.");
+  }
+  return [specialistId];
+}
+
+// ───────────────────────── Доступність ─────────────────────────
+
 export interface AvailabilityQuery {
-  serviceId: string;
-  /** Якщо задано — лише цей спеціаліст; інакше всі, хто надає послугу. */
+  serviceIds: string[];
+  /** Якщо задано — лише цей спеціаліст; інакше всі, хто надає всі послуги. */
   specialistId?: string;
   range: DateRange;
 }
 
 export interface AvailabilityResult {
-  serviceId: string;
+  serviceIds: string[];
   durationMin: number;
   range: DateRange;
   slots: Slot[];
   groups: GroupedSlots;
 }
 
-/** Кастомна помилка з HTTP-статусом для роутів. */
-export class HttpError extends Error {
-  constructor(
-    readonly status: number,
-    message: string,
-  ) {
-    super(message);
-    this.name = "HttpError";
-  }
-}
-
-async function resolveService(serviceId: string): Promise<Service> {
-  const services = await getProvider().getServices();
-  const service = services.find((s) => s.id === serviceId);
-  if (!service) throw new HttpError(404, `Послугу ${serviceId} не знайдено.`);
-  return service;
-}
-
-/** Спеціалісти, серед яких шукаємо слоти для послуги (з опц. звуженням). */
-function resolveSpecialistIds(service: Service, specialistId?: string): string[] {
-  if (!specialistId) return service.specialistIds;
-  if (!service.specialistIds.includes(specialistId)) {
-    throw new HttpError(400, `Спеціаліст ${specialistId} не надає послугу ${service.id}.`);
-  }
-  return [specialistId];
-}
-
-/** Обчислює згруповані вільні слоти для послуги (режими «по лікарю»/«по послузі»/«будь-який»). */
+/** Згруповані вільні слоти для набору послуг (сумарна тривалість). */
 export async function getAvailability(query: AvailabilityQuery): Promise<AvailabilityResult> {
   const provider = getProvider();
-  const service = await resolveService(query.serviceId);
-  const specialistIds = resolveSpecialistIds(service, query.specialistId);
+  const services = await resolveServices(query.serviceIds);
+  const duration = totalDuration(services);
+  const specialistIds = intersectSpecialists(services, query.specialistId);
 
   const [shifts, busy] = await Promise.all([
     provider.getShifts(query.range),
     provider.getBusy(query.range),
   ]);
 
-  const slots = computeFreeSlotsForService(
-    shifts,
-    busy,
-    specialistIds,
-    service.durationMin,
-    STEP_MIN,
-  );
+  const slots = computeFreeSlotsForService(shifts, busy, specialistIds, duration, STEP_MIN);
 
   return {
-    serviceId: service.id,
-    durationMin: service.durationMin,
+    serviceIds: query.serviceIds,
+    durationMin: duration,
     range: query.range,
     slots,
     groups: groupByTimeOfDay(slots),
   };
 }
 
+// ───────────────────────── Створення запису ─────────────────────────
+
 /** Перевіряє, що запитаний слот усе ще вільний у конкретного спеціаліста. */
 async function assertSlotFree(request: BookingRequest): Promise<void> {
-  const service = await resolveService(request.serviceIds[0]);
-  if (!service.specialistIds.includes(request.specialistId)) {
-    throw new HttpError(400, "Обраний спеціаліст не надає цю послугу.");
-  }
+  const services = await resolveServices(request.serviceIds);
+  intersectSpecialists(services, request.specialistId); // кине 400, якщо не надає всі
+  const duration = totalDuration(services);
 
   const date = request.startTime.slice(0, 10);
   const range: DateRange = { from: date, to: date };
@@ -131,7 +184,7 @@ async function assertSlotFree(request: BookingRequest): Promise<void> {
   ]);
 
   const mineShifts = shifts.filter((s) => s.specialistId === request.specialistId);
-  const free = computeFreeSlots(mineShifts, busy, service.durationMin, STEP_MIN);
+  const free = computeFreeSlots(mineShifts, busy, duration, STEP_MIN);
   const available = free.some((slot) => slot.startTime === request.startTime);
   if (!available) {
     throw new HttpError(409, "Обраний час уже зайнято. Оновіть доступність і спробуйте ще раз.");

@@ -17,6 +17,7 @@ function next7Days(): DateRange {
 
 // svc-0 = "Консультація дерматологічна" (60 хв) у згенерованому каталозі.
 const SERVICE_ID = "svc-0";
+const SERVICE_IDS = [SERVICE_ID];
 
 describe("getServicesWithCategories", () => {
   it("повертає категорії у порядку order", async () => {
@@ -28,7 +29,7 @@ describe("getServicesWithCategories", () => {
 
 describe("getAvailability", () => {
   it("повертає згруповані слоти для послуги", async () => {
-    const result = await getAvailability({ serviceId: SERVICE_ID, range: next7Days() });
+    const result = await getAvailability({ serviceIds: SERVICE_IDS, range: next7Days() });
     expect(result.durationMin).toBe(60);
     expect(result.slots.length).toBeGreaterThan(0);
     const regrouped =
@@ -38,16 +39,23 @@ describe("getAvailability", () => {
     expect(regrouped).toBe(result.slots.length);
   });
 
+  it("сумує тривалість кількох послуг", async () => {
+    // svc-0 (60) + svc-1 (60) = 120 хв.
+    const result = await getAvailability({ serviceIds: ["svc-0", "svc-1"], range: next7Days() });
+    expect(result.durationMin).toBe(120);
+    expect(result.slots.length).toBeGreaterThan(0);
+  });
+
   it("404 для невідомої послуги", async () => {
     await expect(
-      getAvailability({ serviceId: "svc-none", range: next7Days() }),
+      getAvailability({ serviceIds: ["svc-none"], range: next7Days() }),
     ).rejects.toMatchObject({ status: 404 });
   });
 });
 
 describe("createBooking", () => {
   it("створює запис на вільний слот, повертає 409 при повторі, поважає Idempotency-Key", async () => {
-    const { slots } = await getAvailability({ serviceId: SERVICE_ID, range: next7Days() });
+    const { slots } = await getAvailability({ serviceIds: SERVICE_IDS, range: next7Days() });
     expect(slots.length).toBeGreaterThan(1);
 
     const slot = slots[0];
@@ -68,7 +76,7 @@ describe("createBooking", () => {
 
     // Ідемпотентність: беремо гарантовано вільний слот (перерахунок після броні),
     // двічі з тим самим ключем → той самий запис.
-    const fresh = await getAvailability({ serviceId: SERVICE_ID, range: next7Days() });
+    const fresh = await getAvailability({ serviceIds: SERVICE_IDS, range: next7Days() });
     const other = fresh.slots[0];
     const req2 = {
       specialistId: other.specialistId,
