@@ -72,7 +72,7 @@ UI → BFF (серверні роути `app/api`) → ports (інтерфейс
   на Ранок/День/Вечір. СПЕРШУ Vitest-тести на крайні випадки (перетин на межі, слот рівно
   в кінці зміни, проміжок коротший за послугу, порожня зміна, кілька busy підряд), ПОТІМ
   реалізація; тести мають бути зелені.
-- [ ] **Крок 5** — `src/lib/config.ts`: читає env (`CLINICCARDS_API_KEY`,
+- [x] **Крок 5** — `src/lib/config.ts`: читає env (`CLINICCARDS_API_KEY`,
   `CLINICCARDS_BASE_URL`, `PROVIDER=mock|cliniccards`), фабрика повертає провайдера;
   дефолт mock; ключ лише на сервері.
 - [ ] **Крок 6** — BFF роути: `GET /api/specialists`; `GET /api/services` (з категоріями);
