@@ -84,7 +84,7 @@ UI → BFF (серверні роути `app/api`) → ports (інтерфейс
   спеціаліста (+«Будь-який фахівець») → послуги за категоріями → календар + сітка часу
   (Ранок/День/Вечір) → підтвердження (ім'я, телефон, коментар → POST /api/bookings) →
   екран успіху. Переходи як повноекранні екрани/шторки.
-- [ ] **Крок 8** — PWA + крафт: manifest + service worker (інсталяція, display standalone);
+- [x] **Крок 8** — PWA + крафт: manifest + service worker (інсталяція, display standalone);
   safe-area через `env(safe-area-inset-*)`; font-size 16px на інпутах (щоб iOS не зумив);
   вимкнути tap-highlight; інерційний скрол; скелетони замість спінерів.
 - [ ] **Крок 9** — Реальний Cliniccards: `src/integration/cliniccards/client.ts` (HTTP з

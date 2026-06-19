@@ -174,7 +174,7 @@ export default function BookingFlow() {
 
   return (
     <div className="mx-auto flex min-h-full w-full max-w-md flex-col bg-white">
-      <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-zinc-100 bg-white/90 px-4 py-3 backdrop-blur">
+      <header className="pt-safe sticky top-0 z-10 flex items-center gap-3 border-b border-zinc-100 bg-white/90 px-4 py-3 backdrop-blur">
         {back[step] ? (
           <button
             type="button"
@@ -190,7 +190,7 @@ export default function BookingFlow() {
         <h1 className="text-lg font-semibold text-zinc-900">{TITLES[step]}</h1>
       </header>
 
-      <main className="flex-1 px-4 py-4">
+      <main className="pb-safe flex-1 px-4 py-4">
         {error && (
           <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
         )}
