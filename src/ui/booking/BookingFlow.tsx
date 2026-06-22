@@ -12,7 +12,7 @@ import {
   fetchSpecialists,
   SpecialistWithAvailability,
 } from "./api";
-import { formatDateShort, formatDuration, formatPrice, formatTime } from "./format";
+import { formatDateLong, formatDateShort, formatDuration, formatPrice, formatTime } from "./format";
 import { kyivDate } from "@/lib/timezone";
 import Overlay from "./Overlay";
 import Avatar from "./Avatar";
@@ -327,31 +327,84 @@ export default function BookingFlow() {
   if (screen === "about") {
     return (
       <Overlay title="Про нас" onBack={() => setScreen("home")}>
-        <div className="flex flex-col items-center gap-3 pt-4 text-center text-sm text-zinc-700">
+        <div className="flex flex-col items-center gap-4 pt-4 text-center text-sm text-zinc-700">
           <Image src="/logo.png" alt="Логотип Nuovo skin" width={96} height={96} className="rounded-full" />
-          <p className="text-lg font-semibold text-zinc-900">{SALON.name}</p>
-          <p>{SALON.address}</p>
-          <p>{SALON.hours}</p>
+          <div className="flex flex-col items-center gap-1">
+            <p className="text-lg font-semibold text-zinc-900">{SALON.name}</p>
+            <a
+              href={SALON.mapUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-brand underline underline-offset-2"
+            >
+              {SALON.address}
+            </a>
+            <p className="text-zinc-500">{SALON.hours}</p>
+          </div>
+
+          <a href={`tel:${SALON.phone}`} className="text-base font-semibold text-zinc-900">
+            {SALON.phone}
+          </a>
+
+          <div className="flex w-full flex-col gap-2">
+            <a
+              href={SALON.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex h-12 items-center justify-center gap-2 rounded-xl border border-zinc-200 font-medium text-zinc-800 active:bg-zinc-100"
+            >
+              Instagram
+            </a>
+            <a
+              href={SALON.telegram}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex h-12 items-center justify-center gap-2 rounded-xl border border-zinc-200 font-medium text-zinc-800 active:bg-zinc-100"
+            >
+              Telegram
+            </a>
+          </div>
         </div>
       </Overlay>
     );
   }
   if (screen === "success" && booking) {
+    const bookedSpecialist =
+      specialists?.find((s) => s.id === booking.specialistId)?.name ?? slotSpecialistName;
+    const bookedServices =
+      services?.filter((s) => booking.serviceIds.includes(s.id)).map((s) => s.name) ?? [];
     return (
-      <div className="mx-auto flex min-h-full max-w-md flex-col items-center justify-center gap-4 px-6 text-center">
+      <div className="mx-auto flex min-h-full max-w-md flex-col items-center justify-center gap-5 px-6 py-10 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-3xl text-green-600">
           ✓
         </div>
         <h2 className="text-xl font-semibold text-zinc-900">Вас записано!</h2>
-        <p className="text-sm text-zinc-600">
-          {formatDateShort(kyivDate(booking.startTime))} о {formatTime(booking.startTime)}
-          <br />
-          {slotSpecialistName}
-        </p>
+
+        <dl className="w-full max-w-sm rounded-xl bg-zinc-50 p-4 text-left text-sm">
+          <div className="flex justify-between gap-3 py-1">
+            <dt className="shrink-0 text-zinc-500">Послуги</dt>
+            <dd className="text-right font-medium text-zinc-900">{bookedServices.join(", ")}</dd>
+          </div>
+          <div className="flex justify-between gap-3 py-1">
+            <dt className="shrink-0 text-zinc-500">Фахівець</dt>
+            <dd className="text-right font-medium text-zinc-900">{bookedSpecialist}</dd>
+          </div>
+          <div className="flex justify-between gap-3 py-1">
+            <dt className="shrink-0 text-zinc-500">Дата</dt>
+            <dd className="text-right font-medium text-zinc-900">
+              {formatDateLong(kyivDate(booking.startTime))}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-3 py-1">
+            <dt className="shrink-0 text-zinc-500">Час</dt>
+            <dd className="text-right font-medium text-zinc-900">{formatTime(booking.startTime)}</dd>
+          </div>
+        </dl>
+
         <button
           type="button"
           onClick={reset}
-          className="mt-4 h-12 w-full rounded-xl bg-zinc-100 text-base font-semibold text-zinc-800"
+          className="h-12 w-full max-w-sm rounded-xl bg-zinc-100 text-base font-semibold text-zinc-800"
         >
           Новий запис
         </button>
