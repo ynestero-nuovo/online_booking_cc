@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Великі оригінали фото — у репо лише зменшені копії в public/specialists
+/src/img/
