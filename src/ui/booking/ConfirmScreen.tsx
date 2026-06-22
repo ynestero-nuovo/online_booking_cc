@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Overlay from "./Overlay";
+import Markdown from "./Markdown";
+import { PRIVACY_POLICY, TERMS_OF_SERVICE } from "@/lib/policy";
 
 /** Форматує до 10 національних цифр як "0XX XXX XX XX". */
 function formatNational(d: string): string {
@@ -32,25 +34,57 @@ export default function ConfirmScreen({
   const [name, setName] = useState("");
   const [phone, setPhone] = useState(""); // національні цифри (до 10)
   const [comment, setComment] = useState("");
+  const [accepted, setAccepted] = useState(false);
+  const [policy, setPolicy] = useState<"terms" | "privacy" | null>(null);
 
   const phoneComplete = phone.length === 10;
-  const valid = name.trim().length > 0 && phoneComplete;
+  const valid = name.trim().length > 0 && phoneComplete && accepted;
 
   return (
+    <>
     <Overlay
       title="Підтвердження"
       onBack={onBack}
       footer={
-        <button
-          type="button"
-          disabled={loading || !valid}
-          onClick={() =>
-            onSubmit({ name: name.trim(), phone: `+38${phone}`, comment: comment.trim() })
-          }
-          className="h-12 w-full rounded-xl bg-brand text-base font-semibold text-white active:bg-brand-dark disabled:opacity-40"
-        >
-          {loading ? "Записуємо…" : "Підтвердити запис"}
-        </button>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-start gap-2">
+            <input
+              id="accept-terms"
+              type="checkbox"
+              checked={accepted}
+              onChange={(e) => setAccepted(e.target.checked)}
+              className="mt-0.5 h-5 w-5 shrink-0 accent-brand"
+            />
+            <span className="text-sm leading-snug text-zinc-600">
+              Я приймаю умови{" "}
+              <button
+                type="button"
+                onClick={() => setPolicy("terms")}
+                className="text-brand underline underline-offset-2"
+              >
+                Користувацької угоди
+              </button>{" "}
+              та{" "}
+              <button
+                type="button"
+                onClick={() => setPolicy("privacy")}
+                className="text-brand underline underline-offset-2"
+              >
+                Політику конфіденційності
+              </button>
+            </span>
+          </div>
+          <button
+            type="button"
+            disabled={loading || !valid}
+            onClick={() =>
+              onSubmit({ name: name.trim(), phone: `+38${phone}`, comment: comment.trim() })
+            }
+            className="h-12 w-full rounded-xl bg-brand text-base font-semibold text-white active:bg-brand-dark disabled:opacity-40"
+          >
+            {loading ? "Записуємо…" : "Підтвердити запис"}
+          </button>
+        </div>
       }
     >
       <dl className="mb-5 rounded-xl bg-zinc-50 p-4 text-sm">
@@ -90,6 +124,16 @@ export default function ConfirmScreen({
         <Field label="Коментар" value={comment} onChange={setComment} placeholder="Необов'язково" />
       </div>
     </Overlay>
+
+    {policy && (
+      <Overlay
+        title={policy === "terms" ? "Користувацька угода" : "Політика конфіденційності"}
+        onBack={() => setPolicy(null)}
+      >
+        <Markdown source={policy === "terms" ? TERMS_OF_SERVICE : PRIVACY_POLICY} />
+      </Overlay>
+    )}
+    </>
   );
 }
 
