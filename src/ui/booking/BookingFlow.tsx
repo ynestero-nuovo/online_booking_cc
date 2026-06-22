@@ -13,6 +13,7 @@ import {
   SpecialistWithAvailability,
 } from "./api";
 import { formatDateShort, formatDuration, formatPrice, formatTime } from "./format";
+import { kyivDate } from "@/lib/timezone";
 import Overlay from "./Overlay";
 import Avatar from "./Avatar";
 import SpecialistScreen from "./SpecialistScreen";
@@ -54,6 +55,7 @@ export default function BookingFlow() {
   const [availability, setAvailability] = useState<AvailabilityResponse | null>(null);
   // Спеціалісти, вільні на обраний час (slot) — для фільтра екрана спеціалістів.
   const [freeAtSlotIds, setFreeAtSlotIds] = useState<string[] | null>(null);
+  const [freeAtLoading, setFreeAtLoading] = useState(false);
   const [loadingAvail, setLoadingAvail] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -108,21 +110,27 @@ export default function BookingFlow() {
     return constraints.reduce((acc, c) => acc.filter((id) => c.includes(id)));
   }, [selectedServices, commonSpecialistIds, slot, freeAtSlotIds]);
 
-  const specialistFilterNote = slot
-    ? `Вільні на ${formatDateShort(slot.startTime.slice(0, 10))} о ${formatTime(slot.startTime)}`
-    : selectedServices.length > 0
-      ? "Виконують обрані послуги"
-      : undefined;
+  // Підпис обіцяє фільтр «вільні на час» лише коли його реально застосовано (freeAtSlotIds).
+  const specialistFilterNote =
+    slot && freeAtSlotIds
+      ? `Вільні на ${formatDateShort(kyivDate(slot.startTime))} о ${formatTime(slot.startTime)}`
+      : selectedServices.length > 0
+        ? "Виконують обрані послуги"
+        : undefined;
 
   // Хто вільний на обраний час: окремий запит на дату слота без дедуплікації.
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       if (!slot || selectedServices.length === 0) {
-        if (!cancelled) setFreeAtSlotIds(null);
+        if (!cancelled) {
+          setFreeAtSlotIds(null);
+          setFreeAtLoading(false);
+        }
         return;
       }
-      const date = slot.startTime.slice(0, 10);
+      setFreeAtLoading(true);
+      const date = kyivDate(slot.startTime);
       try {
         const r = await fetchAvailability({
           serviceIds: selectedServices.map((s) => s.id),
@@ -135,6 +143,8 @@ export default function BookingFlow() {
         setFreeAtSlotIds([...new Set(ids)]);
       } catch {
         if (!cancelled) setFreeAtSlotIds(null);
+      } finally {
+        if (!cancelled) setFreeAtLoading(false);
       }
     };
     void load();
@@ -197,7 +207,7 @@ export default function BookingFlow() {
   function clearSpecialist() {
     setAnyChosen(false);
     setSpecialist(null);
-    // Час лишаємо — його можна обрати до спеціаліста.
+    setSlot(null); // слот прив'язаний до лікаря — скидаємо разом, щоб не лишити чужого
   }
   function toggleService(s: Service) {
     setSelectedIds((prev) => {
@@ -261,7 +271,7 @@ export default function BookingFlow() {
     return (
       <SpecialistScreen
         specialists={specialists}
-        loading={specialists === null}
+        loading={specialists === null || (slot !== null && freeAtLoading)}
         eligibleIds={eligibleSpecialistIds}
         filterNote={specialistFilterNote}
         onPick={chooseSpecialist}
@@ -304,7 +314,7 @@ export default function BookingFlow() {
         summary={{
           specialist: slotSpecialistName || (specialist?.name ?? "Будь-який фахівець"),
           services: selectedServices.map((s) => s.name).join(", "),
-          when: `${formatDateShort(slot.startTime.slice(0, 10))} о ${formatTime(slot.startTime)}`,
+          when: `${formatDateShort(kyivDate(slot.startTime))} о ${formatTime(slot.startTime)}`,
           price: `${formatPrice(totalPrice)} · ${formatDuration(totalMin)}`,
         }}
         loading={submitting}
@@ -334,7 +344,7 @@ export default function BookingFlow() {
         </div>
         <h2 className="text-xl font-semibold text-zinc-900">Вас записано!</h2>
         <p className="text-sm text-zinc-600">
-          {formatDateShort(booking.startTime.slice(0, 10))} о {formatTime(booking.startTime)}
+          {formatDateShort(kyivDate(booking.startTime))} о {formatTime(booking.startTime)}
           <br />
           {slotSpecialistName}
         </p>
@@ -459,7 +469,7 @@ export default function BookingFlow() {
         >
           {slot ? (
             <span className="font-medium text-zinc-900">
-              {formatDateShort(slot.startTime.slice(0, 10))} о {formatTime(slot.startTime)}
+              {formatDateShort(kyivDate(slot.startTime))} о {formatTime(slot.startTime)}
             </span>
           ) : (
             <span className="text-zinc-400">

@@ -50,17 +50,16 @@ export default function SpecialistScreen({
           </button>
         </li>
 
-        {loading && !specialists && (
-          <li className="py-6 text-center text-sm text-zinc-400">Завантаження…</li>
-        )}
+        {loading && <li className="py-6 text-center text-sm text-zinc-400">Завантаження…</li>}
 
-        {specialists && visible.length === 0 && (
+        {!loading && specialists && visible.length === 0 && (
           <li className="py-6 text-center text-sm text-zinc-500">
             Немає доступних майстрів для цього вибору.
           </li>
         )}
 
-        {visible.map((s) => (
+        {!loading &&
+          visible.map((s) => (
           <li key={s.id}>
             <button
               type="button"
