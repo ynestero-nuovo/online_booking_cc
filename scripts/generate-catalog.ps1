@@ -14,8 +14,14 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 $z = [System.IO.Compression.ZipFile]::OpenRead($full)
 function Get-ZipText($n) { $e = $z.GetEntry($n); $r = New-Object System.IO.StreamReader($e.Open(), [System.Text.Encoding]::UTF8); $t = $r.ReadToEnd(); $r.Close(); $t }
 $ss = Get-ZipText 'xl/sharedStrings.xml'
-$sheet = Get-ZipText 'xl/worksheets/sheet2.xml'
+# Pick the matrix worksheet robustly (not by hard-coded number): the online-booking
+# sheet has 5 specialist duration columns, so its header has a TEXT cell in column G.
+$sheetFiles = $z.Entries | Where-Object { $_.FullName -match 'xl/worksheets/sheet\d+\.xml$' } | ForEach-Object { $_.FullName }
+$sheet = $null
+foreach ($sf in $sheetFiles) { $txt = Get-ZipText $sf; if ($txt -match '<c r="G\d+"[^>]*t="s"') { $sheet = $txt; break } }
+if (-not $sheet -and $sheetFiles.Count -gt 0) { $sheet = Get-ZipText $sheetFiles[0] }
 $z.Dispose()
+if (-not $sheet) { throw "No matrix worksheet found in $full" }
 
 $strings = New-Object System.Collections.ArrayList
 foreach ($m in [regex]::Matches($ss, '(?s)<si>(.*?)</si>')) {
@@ -34,7 +40,9 @@ $curCat = $null; $catIdx = 0; $svcIdx = 0; $skipped = 0
 
 foreach ($row in [regex]::Matches($sheet, '(?s)<row[^>]*r="(\d+)"[^>]*>(.*?)</row>')) {
   $cells = @{}
-  foreach ($c in [regex]::Matches($row.Groups[2].Value, '(?s)<c r="([A-Z]+)\d+"([^>]*)>(.*?)</c>')) {
+  # Match BOTH self-closing (<c r="D1"/>) and content (<c r="A1">...</c>) cells, so an
+  # empty cell can't swallow the next column's value.
+  foreach ($c in [regex]::Matches($row.Groups[2].Value, '(?s)<c r="([A-Z]+)\d+"([^>]*?)(?:/>|>(.*?)</c>)')) {
     $col = $c.Groups[1].Value; $attr = $c.Groups[2].Value
     $vm = [regex]::Match($c.Groups[3].Value, '(?s)<v>(.*?)</v>'); if (-not $vm.Success) { continue }
     $v = $vm.Groups[1].Value; if ($attr -match 't="s"') { $v = Dec([string]$strings[[int]$v]) }
@@ -59,6 +67,7 @@ foreach ($row in [regex]::Matches($sheet, '(?s)<row[^>]*r="(\d+)"[^>]*>(.*?)</ro
     continue
   }
 
+  if ($null -eq $price) { $skipped++; continue }  # has providers but no price -> not bookable
   if ($null -eq $curCat) { $curCat = "cat-$catIdx"; [void]$categories.Add([pscustomobject]@{ id = $curCat; name = 'Other'; order = $catIdx }); $catIdx++ }
   [void]$services.Add([pscustomobject]@{
       id = "svc-$svcIdx"; name = $name; categoryId = $curCat

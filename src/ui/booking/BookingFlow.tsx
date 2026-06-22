@@ -74,8 +74,27 @@ export default function BookingFlow() {
   const totalPrice = selectedServices.reduce((n, s) => n + s.price, 0);
   const totalMin = selectedServices.reduce((n, s) => n + s.durationMin, 0);
 
+  // Спеціалісти, які виконують УСІ обрані послуги (перетин). Якщо порожньо —
+  // обрані послуги не можна поєднати в один запис.
+  const commonSpecialistIds = useMemo(() => {
+    if (selectedServices.length === 0) return [];
+    const sets = selectedServices.map((s) => new Set(s.specialistIds));
+    return [...sets[0]].filter((id) => sets.every((set) => set.has(id)));
+  }, [selectedServices]);
+
+  const blockedReason = useMemo(() => {
+    if (selectedServices.length === 0) return null;
+    if (commonSpecialistIds.length === 0) {
+      return "Ці послуги не виконує один майстер — оформіть їх окремими записами.";
+    }
+    if (specialist && !commonSpecialistIds.includes(specialist.id)) {
+      return `${specialist.name} виконує не всі обрані послуги — оберіть іншого майстра або «Будь-який».`;
+    }
+    return null;
+  }, [selectedServices, commonSpecialistIds, specialist]);
+
   const specialistChosen = anyChosen || specialist !== null;
-  const canSubmit = selectedServices.length > 0 && slot !== null;
+  const canSubmit = selectedServices.length > 0 && slot !== null && !blockedReason;
 
   // Завантаження доступності при вході на екран часу.
   useEffect(() => {
@@ -362,11 +381,15 @@ export default function BookingFlow() {
           </div>
         )}
 
+        {blockedReason && (
+          <p className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">{blockedReason}</p>
+        )}
+
         {/* Дата і час */}
         <FieldLabel>Дата і час</FieldLabel>
         <FieldButton
           onClick={() => setScreen("datetime")}
-          disabled={selectedServices.length === 0}
+          disabled={selectedServices.length === 0 || !!blockedReason}
           onClear={slot ? () => setSlot(null) : undefined}
         >
           {slot ? (
