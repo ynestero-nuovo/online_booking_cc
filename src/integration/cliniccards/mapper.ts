@@ -11,6 +11,7 @@
 import type { Busy, Shift, Specialist } from "@/domain/types";
 import { kyivWallToUtcIso, utcIsoToKyivParts } from "./timezone";
 import type { RawShift, RawSpace, RawVisit } from "./client";
+import { STAFF_BY_DOCTOR_ID } from "./staff";
 
 /** Статуси візитів, що НЕ блокують час (слот лишається вільним). */
 const NON_BLOCKING_STATUSES = new Set(["CANCELLED"]);
@@ -29,11 +30,13 @@ export function deriveSpecialists(shifts: RawShift[]): Specialist[] {
   const seen = new Map<string, Specialist>();
   for (const s of shifts) {
     if (seen.has(s.doctor_id)) continue;
+    const meta = STAFF_BY_DOCTOR_ID[s.doctor_id];
     seen.set(s.doctor_id, {
       id: s.doctor_id,
       name: s.doctor,
       alias: s.doctor,
-      role: "",
+      role: meta?.role ?? "",
+      photoUrl: meta?.photoUrl,
     });
   }
   return [...seen.values()];

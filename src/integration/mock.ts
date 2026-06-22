@@ -20,11 +20,11 @@ import { CATALOG_CATEGORIES, CATALOG_SERVICES } from "./catalog";
 import { kyivWallToUtcIso } from "@/lib/timezone";
 
 const SPECIALISTS: Specialist[] = [
-  { id: "sp-kovbasa", name: "Катерина Ковбаса", alias: "Катерина Ковбаса", role: "Головний лікар" },
-  { id: "sp-samoukova", name: "Вікторія Самоукова", alias: "Вікторія Самоукова", role: "Лікар" },
-  { id: "sp-kashytska", name: "Ольга Кашицька", alias: "Ольга Кашицька", role: "Лікар" },
-  { id: "sp-movchan", name: "Тетяна Мовчан", alias: "Тетяна Мовчан", role: "Лікар" },
-  { id: "sp-kalashnik", name: "Катерина Калашнік", alias: "Катерина Калашнік", role: "Косметолог" },
+  { id: "sp-kovbasa", name: "Катерина Ковбаса", alias: "Катерина Ковбаса", role: "Головний лікар", photoUrl: "/specialists/kovbasa.png" },
+  { id: "sp-samoukova", name: "Вікторія Самоукова", alias: "Вікторія Самоукова", role: "Лікар", photoUrl: "/specialists/samoukova.png" },
+  { id: "sp-kashytska", name: "Ольга Кашицька", alias: "Ольга Кашицька", role: "Лікар", photoUrl: "/specialists/kashytska.png" },
+  { id: "sp-movchan", name: "Тетяна Мовчан", alias: "Тетяна Мовчан", role: "Лікар", photoUrl: "/specialists/movchan.png" },
+  { id: "sp-kalashnik", name: "Катерина Калашнік", alias: "Катерина Калашнік", role: "Косметолог", photoUrl: "/specialists/kalashnik.png" },
 ];
 
 const CATEGORIES: Category[] = CATALOG_CATEGORIES;

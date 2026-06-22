@@ -1,17 +1,9 @@
 "use client";
 
 import Overlay from "./Overlay";
+import Avatar from "./Avatar";
 import type { SpecialistWithAvailability } from "./api";
 import { formatDateLong } from "./format";
-
-/** Ініціали для аватара-плейсхолдера. */
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? "")
-    .join("");
-}
 
 export default function SpecialistScreen({
   specialists,
@@ -56,9 +48,7 @@ export default function SpecialistScreen({
               onClick={() => onPick(s)}
               className="flex w-full items-center gap-3 py-3 text-left active:bg-zinc-50"
             >
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-sm font-semibold text-zinc-600">
-                {initials(s.name)}
-              </span>
+              <Avatar name={s.name} photoUrl={s.photoUrl} size={48} />
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate font-medium text-zinc-900">{s.name}</span>
                 <span className="truncate text-sm text-zinc-500">{s.role}</span>

@@ -18,7 +18,10 @@ export default function Overlay({
 }) {
   return (
     <div className="fixed inset-0 z-30 mx-auto flex max-w-md flex-col bg-white">
-      <header className="pt-safe flex items-center gap-3 bg-brand px-4 py-3 text-white">
+      <header
+        className="flex items-center gap-3 bg-brand px-4 pb-3 text-white"
+        style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.85rem)" }}
+      >
         <button
           type="button"
           onClick={onBack}

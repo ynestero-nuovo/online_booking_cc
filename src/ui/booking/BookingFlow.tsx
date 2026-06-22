@@ -13,6 +13,7 @@ import {
 } from "./api";
 import { formatDateShort, formatDuration, formatPrice, formatTime } from "./format";
 import Overlay from "./Overlay";
+import Avatar from "./Avatar";
 import SpecialistScreen from "./SpecialistScreen";
 import ServiceScreen from "./ServiceScreen";
 import DateTimeScreen from "./DateTimeScreen";
@@ -27,9 +28,6 @@ function todayIso(): string {
 }
 function addDaysIso(iso: string, days: number): string {
   return new Date(Date.parse(`${iso}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
-}
-function initials(name: string): string {
-  return name.split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
 }
 /** UUID із фолбеком: crypto.randomUUID доступний лише в secure context (HTTPS/localhost). */
 function idempotencyKey(): string {
@@ -269,8 +267,11 @@ export default function BookingFlow() {
 
   return (
     <div className="mx-auto flex min-h-full w-full max-w-md flex-col bg-white">
-      <header className="pt-safe bg-brand px-4 py-4 text-white">
-        <div className="flex items-start justify-between">
+      <header
+        className="bg-brand px-4 pb-4 text-white"
+        style={{ paddingTop: "calc(env(safe-area-inset-top) + 1.25rem)" }}
+      >
+        <div className="flex items-center justify-between">
           <div>
             <p className="text-xl font-semibold">{SALON.name}</p>
             <p className="text-sm text-white/80">{SALON.address}</p>
@@ -299,7 +300,7 @@ export default function BookingFlow() {
         <FieldButton onClick={() => setScreen("specialist")} onClear={specialistChosen ? clearSpecialist : undefined}>
           {specialist ? (
             <span className="flex items-center gap-3">
-              <Avatar name={specialist.name} />
+              <Avatar name={specialist.name} photoUrl={specialist.photoUrl} size={40} />
               <span className="flex flex-col text-left">
                 <span className="font-medium text-zinc-900">{specialist.name}</span>
                 <span className="text-sm text-zinc-500">{specialist.role}</span>
@@ -413,13 +414,5 @@ function FieldButton({
         <span className="px-4 text-zinc-300">›</span>
       )}
     </div>
-  );
-}
-
-function Avatar({ name }: { name: string }) {
-  return (
-    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-sm font-semibold text-zinc-600">
-      {initials(name)}
-    </span>
   );
 }
