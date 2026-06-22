@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import type { Booking, Category, Service, Slot } from "@/domain/types";
 import { SALON } from "@/lib/salon";
 import {
@@ -232,7 +233,8 @@ export default function BookingFlow() {
   if (screen === "about") {
     return (
       <Overlay title="Про нас" onBack={() => setScreen("home")}>
-        <div className="flex flex-col gap-3 text-sm text-zinc-700">
+        <div className="flex flex-col items-center gap-3 pt-4 text-center text-sm text-zinc-700">
+          <Image src="/logo.png" alt="Логотип Nuovo skin" width={96} height={96} className="rounded-full" />
           <p className="text-lg font-semibold text-zinc-900">{SALON.name}</p>
           <p>{SALON.address}</p>
           <p>{SALON.hours}</p>
@@ -271,15 +273,25 @@ export default function BookingFlow() {
         className="bg-brand px-4 pb-4 text-white"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 1.25rem)" }}
       >
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xl font-semibold">{SALON.name}</p>
-            <p className="text-sm text-white/80">{SALON.address}</p>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <Image
+              src="/logo.png"
+              alt="Логотип Nuovo skin"
+              width={44}
+              height={44}
+              priority
+              className="shrink-0 rounded-full bg-white"
+            />
+            <div className="min-w-0">
+              <p className="truncate text-xl font-semibold">{SALON.name}</p>
+              <p className="truncate text-sm text-white/80">{SALON.address}</p>
+            </div>
           </div>
           <button
             type="button"
             onClick={() => setScreen("about")}
-            className="rounded-full bg-white/15 px-3 py-1 text-sm active:bg-white/25"
+            className="shrink-0 rounded-full bg-white/15 px-3 py-1 text-sm active:bg-white/25"
           >
             Про нас
           </button>

@@ -41,5 +41,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Великі оригінали фото — у репо лише зменшені копії в public/specialists
-/src/img/
+# Великі оригінали фото спеціалістів — у репо лише зменшені копії в public/specialists
+/src/img/specialists/
