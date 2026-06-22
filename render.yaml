@@ -1,0 +1,23 @@
+# Render Blueprint для Nuovo skin (онлайн-запис).
+# Деплой: New → Blueprint → під'єднати репозиторій. Секрет (ключ) задати в дашборді.
+services:
+  - type: web
+    name: nuovo-skin-booking
+    runtime: node
+    plan: starter # free — теж працює, але засинає в простої
+    region: frankfurt
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    autoDeploy: true
+    healthCheckPath: /
+    envVars:
+      - key: PROVIDER
+        value: cliniccards
+      - key: CLINICCARDS_BASE_URL
+        value: https://cliniccards.com/api
+      - key: CLINICCARDS_API_KEY
+        sync: false # СЕКРЕТ — задати в дашборді Render, не в git
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+      - key: NODE_VERSION
+        value: "20"
