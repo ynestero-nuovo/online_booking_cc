@@ -150,6 +150,8 @@ export interface AvailabilityQuery {
   /** Якщо задано — лише цей спеціаліст; інакше всі, хто надає всі послуги. */
   specialistId?: string;
   range: DateRange;
+  /** За замовчуванням true (один слот на час). false → слот на кожного вільного лікаря. */
+  dedup?: boolean;
 }
 
 export interface AvailabilityResult {
@@ -174,7 +176,9 @@ export async function getAvailability(query: AvailabilityQuery): Promise<Availab
 
   const all = computeFreeSlotsForService(shifts, busy, specialistIds, duration, STEP_MIN);
   // «Будь-який фахівець» (без звуження): один слот на час, щоб не дублювати кнопки.
-  const slots = query.specialistId ? all : dedupeByStartTime(all);
+  // dedup=false лишає по слоту на кожного вільного лікаря (для пошуку «хто вільний на час»).
+  const slots =
+    query.specialistId || query.dedup === false ? all : dedupeByStartTime(all);
 
   return {
     serviceIds: query.serviceIds,

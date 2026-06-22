@@ -51,6 +51,7 @@ export async function fetchAvailability(params: {
   from: string;
   to: string;
   specialistId?: string;
+  dedup?: boolean;
 }): Promise<AvailabilityResponse> {
   const qs = new URLSearchParams({
     serviceIds: params.serviceIds.join(","),
@@ -58,6 +59,7 @@ export async function fetchAvailability(params: {
     to: params.to,
   });
   if (params.specialistId) qs.set("specialistId", params.specialistId);
+  if (params.dedup === false) qs.set("dedup", "false");
   return getJson<AvailabilityResponse>(`/api/availability?${qs.toString()}`);
 }
 

@@ -52,6 +52,8 @@ export default function BookingFlow() {
   const [slot, setSlot] = useState<Slot | null>(null);
 
   const [availability, setAvailability] = useState<AvailabilityResponse | null>(null);
+  // Спеціалісти, вільні на обраний час (slot) — для фільтра екрана спеціалістів.
+  const [freeAtSlotIds, setFreeAtSlotIds] = useState<string[] | null>(null);
   const [loadingAvail, setLoadingAvail] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +98,51 @@ export default function BookingFlow() {
   const specialistChosen = anyChosen || specialist !== null;
   const canSubmit = selectedServices.length > 0 && slot !== null && !blockedReason;
 
+  // Кого показувати на екрані спеціалістів: перетин обмежень —
+  // (хто надає всі обрані послуги) ∩ (хто вільний на обраний час).
+  const eligibleSpecialistIds = useMemo(() => {
+    const constraints: string[][] = [];
+    if (selectedServices.length > 0) constraints.push(commonSpecialistIds);
+    if (slot && freeAtSlotIds) constraints.push(freeAtSlotIds);
+    if (constraints.length === 0) return null;
+    return constraints.reduce((acc, c) => acc.filter((id) => c.includes(id)));
+  }, [selectedServices, commonSpecialistIds, slot, freeAtSlotIds]);
+
+  const specialistFilterNote = slot
+    ? `Вільні на ${formatDateShort(slot.startTime.slice(0, 10))} о ${formatTime(slot.startTime)}`
+    : selectedServices.length > 0
+      ? "Виконують обрані послуги"
+      : undefined;
+
+  // Хто вільний на обраний час: окремий запит на дату слота без дедуплікації.
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!slot || selectedServices.length === 0) {
+        if (!cancelled) setFreeAtSlotIds(null);
+        return;
+      }
+      const date = slot.startTime.slice(0, 10);
+      try {
+        const r = await fetchAvailability({
+          serviceIds: selectedServices.map((s) => s.id),
+          from: date,
+          to: date,
+          dedup: false,
+        });
+        if (cancelled) return;
+        const ids = r.slots.filter((s) => s.startTime === slot.startTime).map((s) => s.specialistId);
+        setFreeAtSlotIds([...new Set(ids)]);
+      } catch {
+        if (!cancelled) setFreeAtSlotIds(null);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [slot, selectedServices]);
+
   // Завантаження доступності при вході на екран часу.
   useEffect(() => {
     if (screen !== "datetime" || selectedServices.length === 0) return;
@@ -126,15 +173,31 @@ export default function BookingFlow() {
   }, [screen, selectedServices, anyChosen, specialist]);
 
   function chooseSpecialist(s: SpecialistWithAvailability | null) {
-    setAnyChosen(s === null);
+    if (s === null) {
+      // «Будь-який» — лишаємо обраний час (автопризначений лікар у слоті лишається).
+      setAnyChosen(true);
+      setSpecialist(null);
+      setScreen("home");
+      return;
+    }
+    setAnyChosen(false);
     setSpecialist(s);
-    setSlot(null); // зміна фахівця скидає час
+    // Прибираємо обрані послуги, яких цей спеціаліст НЕ надає.
+    setSelectedIds((prev) => {
+      const next = new Set(
+        [...prev].filter((id) => services?.find((x) => x.id === id)?.specialistIds.includes(s.id)),
+      );
+      return next;
+    });
+    // Лишаємо обраний час, але переприв'язуємо його на цього спеціаліста
+    // (його відфільтровано як вільного на цей час).
+    setSlot((prev) => (prev ? { ...prev, specialistId: s.id } : prev));
     setScreen("home");
   }
   function clearSpecialist() {
     setAnyChosen(false);
     setSpecialist(null);
-    setSlot(null); // лишаємо послуги, скидаємо лише час
+    // Час лишаємо — його можна обрати до спеціаліста.
   }
   function toggleService(s: Service) {
     setSelectedIds((prev) => {
@@ -199,6 +262,8 @@ export default function BookingFlow() {
       <SpecialistScreen
         specialists={specialists}
         loading={specialists === null}
+        eligibleIds={eligibleSpecialistIds}
+        filterNote={specialistFilterNote}
         onPick={chooseSpecialist}
         onAny={() => chooseSpecialist(null)}
         onBack={() => setScreen("home")}

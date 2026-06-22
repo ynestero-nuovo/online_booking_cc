@@ -25,6 +25,7 @@ export const availabilityQuerySchema = z
     date: isoDate.optional(),
     from: isoDate.optional(),
     to: isoDate.optional(),
+    dedup: z.enum(["true", "false"]).optional(),
   })
   .refine((q) => q.serviceIds.length > 0, { message: "Потрібна щонайменше одна послуга." })
   .refine((q) => Boolean(q.date) || (Boolean(q.from) && Boolean(q.to)), {

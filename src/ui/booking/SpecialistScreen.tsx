@@ -8,18 +8,29 @@ import { formatDateLong } from "./format";
 export default function SpecialistScreen({
   specialists,
   loading,
+  eligibleIds,
+  filterNote,
   onPick,
   onAny,
   onBack,
 }: {
   specialists: SpecialistWithAvailability[] | null;
   loading: boolean;
+  /** Якщо задано — показуємо лише цих спеціалістів (за послугами/часом). null — усіх. */
+  eligibleIds: string[] | null;
+  /** Підпис, що пояснює фільтр (напр. «вільні на обраний час»). */
+  filterNote?: string;
   onPick: (s: SpecialistWithAvailability) => void;
   onAny: () => void;
   onBack: () => void;
 }) {
+  const visible = eligibleIds
+    ? (specialists ?? []).filter((s) => eligibleIds.includes(s.id))
+    : (specialists ?? []);
+  const showTime = Boolean(eligibleIds); // фільтр активний → дата зайва (вони вільні на час/доступні)
+
   return (
-    <Overlay title="Оберіть фахівця" onBack={onBack}>
+    <Overlay title="Оберіть фахівця" subtitle={filterNote} onBack={onBack}>
       <ul className="flex flex-col divide-y divide-zinc-100">
         <li>
           <button
@@ -32,7 +43,9 @@ export default function SpecialistScreen({
             </span>
             <span className="flex flex-col">
               <span className="font-medium text-zinc-900">Будь-який фахівець</span>
-              <span className="text-sm text-zinc-500">Покажемо всі вільні слоти</span>
+              <span className="text-sm text-zinc-500">
+                {eligibleIds ? "Будь-хто з доступних" : "Покажемо всі вільні слоти"}
+              </span>
             </span>
           </button>
         </li>
@@ -41,7 +54,13 @@ export default function SpecialistScreen({
           <li className="py-6 text-center text-sm text-zinc-400">Завантаження…</li>
         )}
 
-        {specialists?.map((s) => (
+        {specialists && visible.length === 0 && (
+          <li className="py-6 text-center text-sm text-zinc-500">
+            Немає доступних майстрів для цього вибору.
+          </li>
+        )}
+
+        {visible.map((s) => (
           <li key={s.id}>
             <button
               type="button"
@@ -53,18 +72,20 @@ export default function SpecialistScreen({
                 <span className="truncate font-medium text-zinc-900">{s.name}</span>
                 <span className="truncate text-sm text-zinc-500">{s.role}</span>
               </span>
-              <span className="shrink-0 text-right text-xs text-zinc-400">
-                {s.nearestFreeDate ? (
-                  <>
-                    <span className="block font-medium text-zinc-700">
-                      {formatDateLong(s.nearestFreeDate)}
-                    </span>
-                    Найближчий вільний день
-                  </>
-                ) : (
-                  "Немає вільних днів"
-                )}
-              </span>
+              {!showTime && (
+                <span className="shrink-0 text-right text-xs text-zinc-400">
+                  {s.nearestFreeDate ? (
+                    <>
+                      <span className="block font-medium text-zinc-700">
+                        {formatDateLong(s.nearestFreeDate)}
+                      </span>
+                      Найближчий вільний день
+                    </>
+                  ) : (
+                    "Немає вільних днів"
+                  )}
+                </span>
+              )}
             </button>
           </li>
         ))}
