@@ -44,7 +44,9 @@ export const bookingRequestSchema = z.object({
   startTime: isoDateTime,
   patient: z.object({
     name: z.string().min(1, "Вкажіть ім'я."),
-    phone: z.string().min(5, "Вкажіть телефон."),
+    phone: z
+      .string()
+      .refine((v) => v.replace(/\D/g, "").length >= 10, "Некоректний номер телефону."),
   }),
   comment: z.string().max(1000).optional(),
 });

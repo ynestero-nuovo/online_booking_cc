@@ -3,6 +3,18 @@
 import { useState } from "react";
 import Overlay from "./Overlay";
 
+/** Форматує до 10 національних цифр як "0XX XXX XX XX". */
+function formatNational(d: string): string {
+  return [d.slice(0, 3), d.slice(3, 6), d.slice(6, 8), d.slice(8, 10)].filter(Boolean).join(" ");
+}
+
+/** Дістає національні 10 цифр з довільного вводу (відкидає +38/380 за наявності). */
+function parseNational(input: string): string {
+  let d = input.replace(/\D/g, "");
+  if (d.startsWith("38")) d = d.slice(2); // прибираємо код країни, якщо вставили повний номер
+  return d.slice(0, 10);
+}
+
 export default function ConfirmScreen({
   summary,
   loading,
@@ -13,13 +25,16 @@ export default function ConfirmScreen({
   summary: { specialist: string; services: string; when: string; price: string };
   loading: boolean;
   error: string | null;
+  /** phone — повний номер у форматі +38XXXXXXXXXX. */
   onSubmit: (data: { name: string; phone: string; comment: string }) => void;
   onBack: () => void;
 }) {
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState(""); // національні цифри (до 10)
   const [comment, setComment] = useState("");
-  const valid = name.trim().length > 0 && phone.trim().length >= 5;
+
+  const phoneComplete = phone.length === 10;
+  const valid = name.trim().length > 0 && phoneComplete;
 
   return (
     <Overlay
@@ -29,7 +44,9 @@ export default function ConfirmScreen({
         <button
           type="button"
           disabled={loading || !valid}
-          onClick={() => onSubmit({ name: name.trim(), phone: phone.trim(), comment: comment.trim() })}
+          onClick={() =>
+            onSubmit({ name: name.trim(), phone: `+38${phone}`, comment: comment.trim() })
+          }
           className="h-12 w-full rounded-xl bg-brand text-base font-semibold text-white active:bg-brand-dark disabled:opacity-40"
         >
           {loading ? "Записуємо…" : "Підтвердити запис"}
@@ -47,7 +64,29 @@ export default function ConfirmScreen({
 
       <div className="flex flex-col gap-3">
         <Field label="Ім'я" value={name} onChange={setName} placeholder="Як до вас звертатися" />
-        <Field label="Телефон" value={phone} onChange={setPhone} placeholder="+380…" type="tel" />
+
+        <label className="flex flex-col gap-1">
+          <span className="text-sm font-medium text-zinc-700">Телефон</span>
+          <div
+            className={`flex h-12 items-center rounded-xl border ${
+              phone.length > 0 && !phoneComplete ? "border-amber-400" : "border-zinc-200"
+            } px-3 focus-within:border-brand`}
+          >
+            <span className="select-none text-base text-zinc-500">+38</span>
+            <input
+              type="tel"
+              inputMode="numeric"
+              value={formatNational(phone)}
+              placeholder="0XX XXX XX XX"
+              onChange={(e) => setPhone(parseNational(e.target.value))}
+              className="ml-2 h-full flex-1 bg-transparent text-base outline-none"
+            />
+          </div>
+          {phone.length > 0 && !phoneComplete && (
+            <span className="text-xs text-amber-600">Введіть 10 цифр номера (напр. 096 986 05 87)</span>
+          )}
+        </label>
+
         <Field label="Коментар" value={comment} onChange={setComment} placeholder="Необов'язково" />
       </div>
     </Overlay>
