@@ -144,13 +144,21 @@ export function createCliniccardsProvider(opts: CliniccardsClientOptions): Booki
       const endIso = new Date(Date.parse(request.startTime) + duration * 60_000).toISOString();
       const end = utcIsoToKyivParts(endIso);
 
-      // 4. Створення візиту.
+      // 4. Нотатка: кожна обрана послуга з нового рядка, коментар клієнта — останнім.
+      const noteLines = request.serviceIds
+        .map((id) => CLINICCARDS_SERVICES.find((s) => s.id === id)?.name)
+        .filter((n): n is string => Boolean(n));
+      const comment = request.comment?.trim();
+      if (comment) noteLines.push(comment);
+      const note = noteLines.join("\n").slice(0, 400); // Cliniccards: note до 400 символів
+
+      // 5. Створення візиту.
       const createdVisit = await client.createVisit({
         status: ONLINE_BOOKING_STATUS,
         patient_id: patientId,
         cabinet_id: shift.schedule_cabinets_id,
         doctor_id: request.specialistId,
-        note: request.comment ?? "",
+        note,
         date: start.date,
         time_start: roundTo5(start.time),
         time_end: roundTo5(end.time),
