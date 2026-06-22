@@ -38,7 +38,14 @@ export default function Overlay({
 
       <div className="flex-1 overflow-y-auto px-4 py-4">{children}</div>
 
-      {footer && <div className="pb-safe border-t border-zinc-100 bg-white px-4 py-3">{footer}</div>}
+      {footer && (
+        <div
+          className="border-t border-zinc-100 bg-white px-4 pt-3"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 15px)" }}
+        >
+          {footer}
+        </div>
+      )}
     </div>
   );
 }
