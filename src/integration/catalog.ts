@@ -234,7 +234,7 @@ export const CATALOG_SERVICES: CatalogService[] = [
   { id: "svc-185", name: "Фотоомолодження зони ОБЛИЧЧЯ, ШИЇ та ДЕКОЛЬТЕ IPL Lumecca", categoryId: "cat-23", durationMin: 30, price: 6500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
   { id: "svc-186", name: "Фотоомолодження зони плечей IPL Lumecca", categoryId: "cat-23", durationMin: 30, price: 4000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
   { id: "svc-187", name: "Фотоомолодження спини IPL Lumecca", categoryId: "cat-23", durationMin: 30, price: 5500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-188", name: "Фотоомолодження спини та плечей IPL Lumecca", categoryId: "cat-23", durationMin: 30, price: 75000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
+  { id: "svc-188", name: "Фотоомолодження спини та плечей IPL Lumecca", categoryId: "cat-23", durationMin: 30, price: 7500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
   { id: "svc-189", name: "Фотоомолодження зони грудей IPL Lumecca", categoryId: "cat-23", durationMin: 30, price: 4000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
   { id: "svc-190", name: "Фотоомолодження кистей рук IPL Lumecca", categoryId: "cat-23", durationMin: 30, price: 3000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
   { id: "svc-191", name: "Фотоомолодження зони рук до ліктя IPL Lumecca", categoryId: "cat-23", durationMin: 30, price: 4500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
