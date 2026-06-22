@@ -96,9 +96,9 @@ describe("createBooking", () => {
   });
 
   it("бронь кількох послуг резервує СУМАРНУ тривалість (не лише першої)", async () => {
-    // Беремо конкретного фахівця; дві 60-хв послуги = 120-хв вікно.
+    // svc-8/svc-9 — консультації, які надає sp-samoukova (60+60=120 хв).
     const av = await getAvailability({
-      serviceIds: ["svc-0", "svc-1"],
+      serviceIds: ["svc-8", "svc-9"],
       specialistId: "sp-samoukova",
       range: next7Days(),
     });
@@ -107,7 +107,7 @@ describe("createBooking", () => {
 
     await createBooking({
       specialistId: "sp-samoukova",
-      serviceIds: ["svc-0", "svc-1"],
+      serviceIds: ["svc-8", "svc-9"],
       startTime: slot.startTime,
       patient: { name: "Тест", phone: "+380501234567" },
     });
@@ -115,7 +115,7 @@ describe("createBooking", () => {
     // Початок другої послуги (T+60) має бути заблокований — інакше резерв був лише 60 хв.
     const t60 = new Date(Date.parse(slot.startTime) + 60 * 60_000).toISOString();
     const after = await getAvailability({
-      serviceIds: ["svc-0"],
+      serviceIds: ["svc-8"],
       specialistId: "sp-samoukova",
       range: next7Days(),
     });

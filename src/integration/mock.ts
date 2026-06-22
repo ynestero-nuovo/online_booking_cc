@@ -16,7 +16,7 @@ import type {
   Specialist,
 } from "@/domain/types";
 import type { BookingProvider, DateRange } from "./ports";
-import { CATALOG_CATEGORIES, CATALOG_SERVICES } from "./catalog";
+import { CATALOG_CATEGORIES, CATALOG_SERVICES, type DoctorKey } from "./catalog";
 import { kyivWallToUtcIso } from "@/lib/timezone";
 
 const SPECIALISTS: Specialist[] = [
@@ -29,10 +29,23 @@ const SPECIALISTS: Specialist[] = [
 
 const CATEGORIES: Category[] = CATALOG_CATEGORIES;
 
-// Поки невідомо, хто яку послугу надає → у моку кожну надають усі спеціалісти.
+/** Ключ лікаря з каталогу → mock-id спеціаліста. */
+const MOCK_ID: Record<DoctorKey, string> = {
+  kovbasa: "sp-kovbasa",
+  samoukova: "sp-samoukova",
+  kashytska: "sp-kashytska",
+  movchan: "sp-movchan",
+  kalashnik: "sp-kalashnik",
+};
+
+// Прив'язка послуга→спеціаліст береться з каталогу (providers із прайс-мапи).
 const SERVICES: Service[] = CATALOG_SERVICES.map((s) => ({
-  ...s,
-  specialistIds: SPECIALISTS.map((sp) => sp.id),
+  id: s.id,
+  name: s.name,
+  categoryId: s.categoryId,
+  durationMin: s.durationMin,
+  price: s.price,
+  specialistIds: s.providers.map((k) => MOCK_ID[k]),
 }));
 
 /** Робочий день у КИЇВСЬКИХ годинах: 10:00–20:00, без вихідних. */

@@ -2,31 +2,31 @@
  * Каталог послуг/категорій для Cliniccards-провайдера.
  *
  * У Cliniccards API НЕМАЄ ендпоінтів послуг/категорій → беремо спільний каталог
- * (`src/integration/catalog.ts`, згенерований із прайсу) і додаємо прив'язку до
- * реальних `doctor_id`.
+ * (`src/integration/catalog.ts`, згенерований із прайс-мапи) і маплимо ключі лікарів
+ * (`providers`) на реальні `doctor_id`.
  */
 
 import type { Category, Service } from "@/domain/types";
-import { CATALOG_CATEGORIES, CATALOG_SERVICES, catalogDurationMin } from "../catalog";
+import { CATALOG_CATEGORIES, CATALOG_SERVICES, catalogDurationMin, type DoctorKey } from "../catalog";
 
-/**
- * Реальні doctor_id з `/schedule-shifts` (звірено наживо):
- * 79215 Ковбаса Катерина (головний лікар), 79264 Самоукова Вікторія,
- * 79716 Кашицька Ольга, 94758 Мовчан Тетяна, 88387 Калашнік Катерина (косметолог).
- */
-const ALL_DOCTORS = ["79215", "79264", "79716", "94758", "88387"];
-
-/** Перевизначення «послуга → doctor_id». Поки порожня → діє дефолт ALL_DOCTORS. */
-const SERVICE_DOCTORS: Record<string, string[]> = {
-  // "svc-0": ["79215"],
+/** Ключ лікаря з каталогу → реальний doctor_id Cliniccards (звірено наживо). */
+const DOCTOR_ID: Record<DoctorKey, string> = {
+  kovbasa: "79215", // Ковбаса Катерина (головний лікар)
+  samoukova: "79264", // Самоукова Вікторія
+  kashytska: "79716", // Кашицька Ольга
+  movchan: "94758", // Мовчан Тетяна
+  kalashnik: "88387", // Калашнік Катерина (косметолог)
 };
 
 export const CLINICCARDS_CATEGORIES: Category[] = CATALOG_CATEGORIES;
 
-// Поки «всі роблять усе» → кожна послуга прив'язана до всіх реальних лікарів.
 export const CLINICCARDS_SERVICES: Service[] = CATALOG_SERVICES.map((s) => ({
-  ...s,
-  specialistIds: SERVICE_DOCTORS[s.id] ?? ALL_DOCTORS,
+  id: s.id,
+  name: s.name,
+  categoryId: s.categoryId,
+  durationMin: s.durationMin,
+  price: s.price,
+  specialistIds: s.providers.map((k) => DOCTOR_ID[k]),
 }));
 
 /** Тривалість послуги (хв) за id; для обчислення time_end при створенні візиту. */
