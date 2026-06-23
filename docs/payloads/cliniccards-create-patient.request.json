@@ -1,0 +1,7 @@
+{
+  "_request": "POST https://cliniccards.com/api/patients  (headers: Token: <CLINICCARDS_API_KEY>, Content-Type: application/json)",
+  "_note": "Виконується лише якщо пошук за телефоном (крок 2a) не знайшов пацієнта. Ім'я розбивається: перше слово -> firstname, решта -> lastname.",
+  "firstname": "Олена",
+  "lastname": "Петренко",
+  "phone": "380969860587"
+}

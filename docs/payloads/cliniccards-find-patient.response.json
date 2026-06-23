@@ -1,0 +1,18 @@
+{
+  "_request": "GET https://cliniccards.com/api/patients?phone=380969860587  (headers: Token: <CLINICCARDS_API_KEY>)",
+  "_note": "Якщо пацієнта з таким номером немає — data: [] (тоді створюємо, крок 2b). Тут показано знайденого.",
+  "data": [
+    {
+      "patient_id": "16040123",
+      "lastname": "Петренко",
+      "firstname": "Олена",
+      "phone": "380969860587",
+      "phone2": "",
+      "gender": null,
+      "note": "",
+      "date_created": "2025-11-02"
+    }
+  ],
+  "result": "success",
+  "error": null
+}

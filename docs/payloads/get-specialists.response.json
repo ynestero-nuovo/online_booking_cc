@@ -1,0 +1,11 @@
+{
+  "_request": "GET /api/specialists",
+  "_note": "nearestFreeDate — найближча дата з вільним слотом (за дефолтною тривалістю).",
+  "specialists": [
+    { "id": "79215", "name": "Ковбаса Катерина", "alias": "Ковбаса Катерина", "role": "Головний лікар", "photoUrl": "/specialists/kovbasa.png", "nearestFreeDate": "2026-07-14" },
+    { "id": "79264", "name": "Самоукова Вікторія", "alias": "Самоукова Вікторія", "role": "Лікар", "photoUrl": "/specialists/samoukova.png", "nearestFreeDate": "2026-06-23" },
+    { "id": "79716", "name": "Кашицька Ольга", "alias": "Кашицька Ольга", "role": "Лікар", "photoUrl": "/specialists/kashytska.png", "nearestFreeDate": "2026-06-23" },
+    { "id": "94758", "name": "Мовчан Тетяна", "alias": "Мовчан Тетяна", "role": "Лікар", "photoUrl": "/specialists/movchan.png", "nearestFreeDate": "2026-06-23" },
+    { "id": "88387", "name": "Калашнік Катерина", "alias": "Калашнік Катерина", "role": "Косметолог", "photoUrl": "/specialists/kalashnik.png", "nearestFreeDate": "2026-06-24" }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "booking": {
+    "specialistId": "79264",
+    "serviceIds": ["svc-8", "svc-9"],
+    "startTime": "2026-06-23T07:00:00.000Z",
+    "patient": {
+      "name": "Олена Петренко",
+      "phone": "+380969860587"
+    },
+    "comment": "Перший візит, алергія на лідокаїн",
+    "id": "57792999",
+    "status": "pending"
+  }
+}

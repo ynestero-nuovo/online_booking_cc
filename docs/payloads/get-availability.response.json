@@ -1,0 +1,12 @@
+{
+  "_request": "GET /api/availability?serviceIds=svc-8,svc-9&from=2026-06-23&to=2026-06-30",
+  "_note": "durationMin = сума обраних послуг (60+60). Без specialistId — слоти всіх лікарів, що надають усі послуги, по одному на час (дедуплікація). Час — UTC. Слоти скорочено.",
+  "serviceIds": ["svc-8", "svc-9"],
+  "durationMin": 120,
+  "range": { "from": "2026-06-23", "to": "2026-06-30" },
+  "slots": [
+    { "specialistId": "79264", "startTime": "2026-06-23T07:00:00.000Z", "endTime": "2026-06-23T09:00:00.000Z" },
+    { "specialistId": "79716", "startTime": "2026-06-23T07:30:00.000Z", "endTime": "2026-06-23T09:30:00.000Z" },
+    { "specialistId": "94758", "startTime": "2026-06-23T08:00:00.000Z", "endTime": "2026-06-23T10:00:00.000Z" }
+  ]
+}

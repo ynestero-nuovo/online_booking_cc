@@ -1,0 +1,10 @@
+{
+  "data": {
+    "patient_id": "16040123",
+    "firstname": "Олена",
+    "lastname": "Петренко",
+    "phone": "380969860587"
+  },
+  "result": "success",
+  "error": null
+}
