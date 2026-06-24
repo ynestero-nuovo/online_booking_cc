@@ -7,7 +7,8 @@
  */
 
 import type { Category, Service } from "@/domain/types";
-import { CATALOG_CATEGORIES, CATALOG_SERVICES, catalogDurationMin, type DoctorKey } from "../catalog";
+import { CATALOG_CATEGORIES, catalogDurationMin, type DoctorKey } from "../catalog";
+import { catalogToServices } from "../catalog-services";
 
 /** Ключ лікаря з каталогу → реальний doctor_id Cliniccards (звірено наживо). */
 const DOCTOR_ID: Record<DoctorKey, string> = {
@@ -20,14 +21,7 @@ const DOCTOR_ID: Record<DoctorKey, string> = {
 
 export const CLINICCARDS_CATEGORIES: Category[] = CATALOG_CATEGORIES;
 
-export const CLINICCARDS_SERVICES: Service[] = CATALOG_SERVICES.map((s) => ({
-  id: s.id,
-  name: s.name,
-  categoryId: s.categoryId,
-  durationMin: s.durationMin,
-  price: s.price,
-  specialistIds: s.providers.map((k) => DOCTOR_ID[k]),
-}));
+export const CLINICCARDS_SERVICES: Service[] = catalogToServices(DOCTOR_ID);
 
 /** Тривалість послуги (хв) за id; для обчислення time_end при створенні візиту. */
 export function serviceDurationMin(serviceId: string): number | undefined {

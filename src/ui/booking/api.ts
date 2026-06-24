@@ -1,32 +1,21 @@
 /**
  * Клієнтський доступ до власних BFF-роутів `/api/*`.
  * Фронт НІКОЛИ не ходить напряму в Cliniccards — тільки сюди.
+ *
+ * Типи відповідей беремо з `@/server/contracts` (лише типи, без рантайму), щоб
+ * контракт сервера й клієнта був єдиним. Ре-експортуємо їх для зручності UI.
  */
 
+import type { Booking, BookingRequest } from "@/domain/types";
 import type {
-  Booking,
-  BookingRequest,
-  Category,
-  Service,
-  Slot,
-  Specialist,
-} from "@/domain/types";
+  AvailabilityResponse,
+  BookingEnvelope,
+  ServicesResponse,
+  SpecialistsEnvelope,
+  SpecialistWithAvailability,
+} from "@/server/contracts";
 
-export interface SpecialistWithAvailability extends Specialist {
-  nearestFreeDate: string | null;
-}
-
-export interface ServicesResponse {
-  categories: Category[];
-  services: Service[];
-}
-
-export interface AvailabilityResponse {
-  serviceIds: string[];
-  durationMin: number;
-  range: { from: string; to: string };
-  slots: Slot[];
-}
+export type { AvailabilityResponse, ServicesResponse, SpecialistWithAvailability };
 
 async function getJson<T>(url: string): Promise<T> {
   const res = await fetch(url);
@@ -38,7 +27,7 @@ async function getJson<T>(url: string): Promise<T> {
 }
 
 export async function fetchSpecialists(): Promise<SpecialistWithAvailability[]> {
-  const data = await getJson<{ specialists: SpecialistWithAvailability[] }>("/api/specialists");
+  const data = await getJson<SpecialistsEnvelope>("/api/specialists");
   return data.specialists;
 }
 
@@ -79,5 +68,5 @@ export async function createBooking(
   if (!res.ok) {
     throw new Error(body.error ?? `Не вдалося створити запис (${res.status}).`);
   }
-  return body.booking as Booking;
+  return (body as BookingEnvelope).booking;
 }

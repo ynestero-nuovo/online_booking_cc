@@ -66,11 +66,8 @@ export interface Slot {
   endTime: IsoDateTime;
 }
 
-/** Група часу протягом дня. */
+/** Група часу протягом дня (для групування слотів в UI). */
 export type TimeGroup = "morning" | "afternoon" | "evening";
-
-/** Слоти, згруповані за частиною дня. */
-export type GroupedSlots = Record<TimeGroup, Slot[]>;
 
 /** Дані пацієнта, що бронює запис. */
 export interface Patient {

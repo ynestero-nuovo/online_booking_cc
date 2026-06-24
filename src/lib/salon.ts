@@ -10,3 +10,10 @@ export const SALON = {
   instagram: "https://www.instagram.com/nuovo_skin/",
   telegram: "https://t.me/nuovo_skin",
 } as const;
+
+/** Метадані застосунку (заголовок / опис / коротка назва) — спільні для layout і manifest. */
+export const APP_META = {
+  title: `${SALON.name} — онлайн-запис`,
+  shortName: SALON.name,
+  description: `Онлайн-запис до клініки ${SALON.name}`,
+} as const;

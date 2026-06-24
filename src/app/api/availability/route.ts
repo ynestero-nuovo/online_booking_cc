@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
       serviceIds: q.serviceIds,
       specialistId: q.specialistId,
       range,
-      dedup: q.dedup !== "false",
+      dedup: q.dedup,
     });
     return NextResponse.json(result);
   } catch (err) {

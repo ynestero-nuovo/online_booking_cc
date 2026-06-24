@@ -28,15 +28,12 @@ describe("getServicesWithCategories", () => {
 });
 
 describe("getAvailability", () => {
-  it("повертає згруповані слоти для послуги", async () => {
+  it("повертає слоти для послуги, відсортовані за часом початку", async () => {
     const result = await getAvailability({ serviceIds: SERVICE_IDS, range: next7Days() });
     expect(result.durationMin).toBe(60);
     expect(result.slots.length).toBeGreaterThan(0);
-    const regrouped =
-      result.groups.morning.length +
-      result.groups.afternoon.length +
-      result.groups.evening.length;
-    expect(regrouped).toBe(result.slots.length);
+    const starts = result.slots.map((s) => Date.parse(s.startTime));
+    expect(starts).toEqual([...starts].sort((a, b) => a - b));
   });
 
   it("сумує тривалість кількох послуг", async () => {

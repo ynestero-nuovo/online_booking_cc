@@ -3,46 +3,69 @@
  *
  * Авторизація — заголовок `Token`. Усі відповіді мають конверт
  * `{ data, result: "success"|"fail", error }`; на `fail` кидаємо помилку.
- * Ендпоінти й схеми — з офіційної документації Cliniccards (Postman).
+ * `data` валідуємо zod-схемами (нижче) — обов'язкові лише поля, які ми реально
+ * читаємо; зайві поля ігноруються. Так некоректну відповідь ловимо на межі,
+ * а не падаємо десь у мапері. Типи `Raw*` виводяться зі схем (немає дрейфу).
  */
+
+import { z } from "zod";
 
 if (typeof window !== "undefined") {
   throw new Error("Cliniccards client є серверним модулем і не може імпортуватися в клієнті.");
 }
 
-/** Сирі форми відповідей (лише потрібні поля). */
-export interface RawShift {
-  schedule_shift_id: string;
-  doctor_id: string;
-  doctor: string;
-  shift_start: string;
-  shift_end: string;
-  schedule_cabinets_id: string;
-  schedule_cabinet_name?: string;
-}
+/** Зміна лікаря. Обов'язкові лише поля, які ми читаємо. */
+export const rawShiftSchema = z.object({
+  doctor_id: z.string(),
+  doctor: z.string(),
+  shift_start: z.string(),
+  shift_end: z.string(),
+  schedule_cabinets_id: z.string(),
+  schedule_shift_id: z.string().optional(),
+  schedule_cabinet_name: z.string().optional(),
+});
+export type RawShift = z.infer<typeof rawShiftSchema>;
 
-export interface RawSpace {
-  schedule_space_id: string;
-  space_start: string;
-  space_end: string;
-  schedule_cabinets_id?: string;
-  type?: string;
-}
+/** Резерв кабінету (schedule-space). */
+export const rawSpaceSchema = z.object({
+  space_start: z.string(),
+  space_end: z.string(),
+  schedule_cabinets_id: z.string().optional(),
+  schedule_space_id: z.string().optional(),
+  type: z.string().optional(),
+});
+export type RawSpace = z.infer<typeof rawSpaceSchema>;
 
-export interface RawVisit {
-  visit_id: string;
-  doctor_id: string;
-  visit_start: string;
-  visit_end: string;
-  status: string;
-}
+/** Візит (для розрахунку зайнятості). */
+export const rawVisitSchema = z.object({
+  doctor_id: z.string(),
+  visit_start: z.string(),
+  visit_end: z.string(),
+  status: z.string(),
+  visit_id: z.string().optional(),
+});
+export type RawVisit = z.infer<typeof rawVisitSchema>;
 
-export interface RawPatient {
-  patient_id: string;
-  firstname: string;
-  lastname: string;
-  phone: string;
-}
+/** Пацієнт (пошук/створення). */
+export const rawPatientSchema = z.object({
+  patient_id: z.string(),
+  firstname: z.string().optional(),
+  lastname: z.string().optional(),
+  phone: z.string().optional(),
+});
+export type RawPatient = z.infer<typeof rawPatientSchema>;
+
+/** Створений візит. */
+export const rawCreatedVisitSchema = z.object({
+  visit_id: z.string(),
+  status: z.string(),
+  patient_id: z.string().optional(),
+  doctor_id: z.string().optional(),
+  visit_start: z.string().optional(),
+  visit_end: z.string().optional(),
+  note: z.string().optional(),
+});
+export type RawCreatedVisit = z.infer<typeof rawCreatedVisitSchema>;
 
 export interface CreateVisitBody {
   status: string;
@@ -53,22 +76,6 @@ export interface CreateVisitBody {
   date: string; // YYYY-MM-DD
   time_start: string; // HH:MM (кратно 5)
   time_end: string; // HH:MM (кратно 5)
-}
-
-export interface RawCreatedVisit {
-  visit_id: string;
-  patient_id: string;
-  doctor_id: string;
-  status: string;
-  visit_start: string;
-  visit_end: string;
-  note?: string;
-}
-
-interface Envelope<T> {
-  data: T;
-  result: "success" | "fail";
-  error: string | null;
 }
 
 export interface CliniccardsClientOptions {
@@ -87,6 +94,7 @@ export class CliniccardsClient {
 
   private async request<T>(
     path: string,
+    schema: z.ZodType<T>,
     init?: { method?: string; query?: Record<string, string>; body?: unknown },
   ): Promise<T> {
     const url = new URL(`${this.baseUrl}${path}`);
@@ -108,34 +116,41 @@ export class CliniccardsClient {
       throw new Error(`Cliniccards ${path}: HTTP ${res.status}`);
     }
 
-    const json = (await res.json()) as Envelope<T>;
+    const json = (await res.json()) as { data?: unknown; result?: string; error?: string | null };
     if (json.result !== "success") {
       throw new Error(`Cliniccards ${path}: ${json.error ?? "невідома помилка"}`);
     }
-    return json.data;
+
+    const parsed = schema.safeParse(json.data);
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      const where = issue?.path.join(".") || "data";
+      throw new Error(`Cliniccards ${path}: неочікувана форма відповіді (${where}: ${issue?.message ?? "validation"})`);
+    }
+    return parsed.data;
   }
 
   getShifts(from: string, to: string): Promise<RawShift[]> {
-    return this.request<RawShift[]>("/schedule-shifts", { query: { from, to } });
+    return this.request("/schedule-shifts", z.array(rawShiftSchema), { query: { from, to } });
   }
 
   getSpaces(from: string, to: string): Promise<RawSpace[]> {
-    return this.request<RawSpace[]>("/schedule-spaces", { query: { from, to } });
+    return this.request("/schedule-spaces", z.array(rawSpaceSchema), { query: { from, to } });
   }
 
   getVisits(from: string, to: string): Promise<RawVisit[]> {
-    return this.request<RawVisit[]>("/visits", { query: { from, to } });
+    return this.request("/visits", z.array(rawVisitSchema), { query: { from, to } });
   }
 
   findPatientByPhone(phone: string): Promise<RawPatient[]> {
-    return this.request<RawPatient[]>("/patients", { query: { phone } });
+    return this.request("/patients", z.array(rawPatientSchema), { query: { phone } });
   }
 
   createPatient(body: { firstname: string; lastname: string; phone: string }): Promise<RawPatient> {
-    return this.request<RawPatient>("/patients", { method: "POST", body });
+    return this.request("/patients", rawPatientSchema, { method: "POST", body });
   }
 
   createVisit(body: CreateVisitBody): Promise<RawCreatedVisit> {
-    return this.request<RawCreatedVisit>("/visits", { method: "POST", body });
+    return this.request("/visits", rawCreatedVisitSchema, { method: "POST", body });
   }
 }

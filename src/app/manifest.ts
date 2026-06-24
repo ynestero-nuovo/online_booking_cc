@@ -1,10 +1,11 @@
 import type { MetadataRoute } from "next";
+import { APP_META } from "@/lib/salon";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Nuovo skin — онлайн-запис",
-    short_name: "Nuovo skin",
-    description: "Онлайн-запис до клініки Nuovo skin",
+    name: APP_META.title,
+    short_name: APP_META.shortName,
+    description: APP_META.description,
     start_url: "/",
     scope: "/",
     display: "standalone",
