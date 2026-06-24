@@ -4,6 +4,7 @@ import { useState } from "react";
 import Overlay from "./Overlay";
 import Markdown from "./Markdown";
 import { PRIVACY_POLICY, TERMS_OF_SERVICE } from "@/lib/policy";
+import { digitsOnly } from "@/lib/phone";
 
 /** Форматує до 10 національних цифр як "0XX XXX XX XX". */
 function formatNational(d: string): string {
@@ -12,7 +13,7 @@ function formatNational(d: string): string {
 
 /** Дістає національні 10 цифр з довільного вводу (відкидає +38/380 за наявності). */
 function parseNational(input: string): string {
-  let d = input.replace(/\D/g, "");
+  let d = digitsOnly(input);
   if (d.startsWith("38")) d = d.slice(2); // прибираємо код країни, якщо вставили повний номер
   return d.slice(0, 10);
 }

@@ -51,8 +51,7 @@ UI → BFF (серверні роути `app/api`) → ports (інтерфейс
 - `Shift(specialistId, date, startTime, endTime)`
 - `Busy(specialistId, startTime, endTime)` — візити + резерви разом
 - `Slot(specialistId, startTime, endTime)`
-- `TimeGroup` = `'morning' | 'afternoon' | 'evening'`
-- `GroupedSlots` = `Record<TimeGroup, Slot[]>`
+- `TimeGroup` = `'morning' | 'afternoon' | 'evening'` (групування слотів в UI)
 - `BookingRequest(specialistId, serviceIds[], startTime, patient{name,phone}, comment?)`
 - `Booking` = `id` + поля `BookingRequest` + `status`
 - Час — ISO.

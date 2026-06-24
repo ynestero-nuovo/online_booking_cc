@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  commonSpecialistIds,
   computeFreeSlots,
   computeFreeSlotsForService,
-  groupByTimeOfDay,
 } from "./availability";
-import type { Busy, Shift, Slot } from "./types";
+import type { Busy, Service, Shift } from "./types";
 
 /** Хелпер: ISO-datetime для дати "2026-06-22" + година UTC (дробові години ок). */
 function at(hour: number, minute = 0): string {
@@ -127,23 +127,34 @@ describe("computeFreeSlotsForService", () => {
   });
 });
 
-describe("groupByTimeOfDay", () => {
-  const slot = (hour: number): Slot => ({
-    specialistId: "sp-1",
-    startTime: at(hour),
-    endTime: at(hour + 1),
+describe("commonSpecialistIds", () => {
+  const svc = (id: string, specialistIds: string[]): Service => ({
+    id,
+    name: id,
+    categoryId: "cat-0",
+    durationMin: 60,
+    price: 0,
+    specialistIds,
   });
 
-  it("розкладає слоти по Ранок/День/Вечір за UTC-годиною початку", () => {
-    // < 12 ранок; 12–16 день; >= 17 вечір (межі перевіряємо нижче).
-    const grouped = groupByTimeOfDay([slot(8), slot(13), slot(19)]);
-    expect(grouped.morning.map((s) => s.startTime)).toEqual([at(8)]);
-    expect(grouped.afternoon.map((s) => s.startTime)).toEqual([at(13)]);
-    expect(grouped.evening.map((s) => s.startTime)).toEqual([at(19)]);
+  it("повертає порожньо без послуг", () => {
+    expect(commonSpecialistIds([])).toEqual([]);
   });
 
-  it("повертає всі три групи навіть коли порожні", () => {
-    const grouped = groupByTimeOfDay([]);
-    expect(grouped).toEqual({ morning: [], afternoon: [], evening: [] });
+  it("для однієї послуги повертає її спеціалістів", () => {
+    expect(commonSpecialistIds([svc("a", ["sp-1", "sp-2"])])).toEqual(["sp-1", "sp-2"]);
+  });
+
+  it("повертає перетин спеціалістів кількох послуг", () => {
+    const result = commonSpecialistIds([
+      svc("a", ["sp-1", "sp-2", "sp-3"]),
+      svc("b", ["sp-2", "sp-3"]),
+      svc("c", ["sp-3", "sp-2"]),
+    ]);
+    expect(result.sort()).toEqual(["sp-2", "sp-3"]);
+  });
+
+  it("порожній перетин, коли спільних спеціалістів немає", () => {
+    expect(commonSpecialistIds([svc("a", ["sp-1"]), svc("b", ["sp-2"])])).toEqual([]);
   });
 });

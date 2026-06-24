@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deriveSpecialists, shiftToDomain, spacesToBusy, visitToBusy } from "./mapper";
+import { buildVisitNote, deriveSpecialists, shiftToDomain, spacesToBusy, visitToBusy } from "./mapper";
 import type { RawShift, RawSpace, RawVisit } from "./client";
 
 const shift = (over: Partial<RawShift> = {}): RawShift => ({
@@ -83,5 +83,31 @@ describe("spacesToBusy", () => {
       shift({ doctor_id: "d2", schedule_cabinets_id: "c2" }),
     ]);
     expect(busy).toHaveLength(0);
+  });
+});
+
+describe("buildVisitNote", () => {
+  it("ставить «З онлайн запису» першим рядком, потім послуги, потім коментар", () => {
+    const note = buildVisitNote(["Послуга A", "Послуга B"], "Алергія на лідокаїн");
+    expect(note).toBe("З онлайн запису\nПослуга A\nПослуга B\nАлергія на лідокаїн");
+  });
+
+  it("без коментаря — лише префікс і послуги", () => {
+    expect(buildVisitNote(["Послуга A"])).toBe("З онлайн запису\nПослуга A");
+  });
+
+  it("ігнорує порожній/пробільний коментар", () => {
+    expect(buildVisitNote(["A"], "   ")).toBe("З онлайн запису\nA");
+  });
+
+  it("префікс присутній навіть без обраних послуг", () => {
+    expect(buildVisitNote([])).toBe("З онлайн запису");
+  });
+
+  it("обрізає до maxLen, зберігаючи початок із префіксом", () => {
+    const long = "x".repeat(500);
+    const note = buildVisitNote([long], undefined, 400);
+    expect(note.length).toBe(400);
+    expect(note.startsWith("З онлайн запису\n")).toBe(true);
   });
 });

@@ -9,7 +9,7 @@
  * Без залежностей від інших шарів.
  */
 
-import type { Busy, GroupedSlots, Shift, Slot, TimeGroup } from "./types";
+import type { Busy, Service, Shift, Slot } from "./types";
 
 const MS_PER_MIN = 60_000;
 
@@ -22,7 +22,7 @@ function toIso(ms: number): string {
 }
 
 /** Чи перетинаються [aStart, aEnd) та [bStart, bEnd)? Дотик на межі — не перетин. */
-function overlaps(aStart: number, aEnd: number, bStart: number, bEnd: number): boolean {
+export function overlaps(aStart: number, aEnd: number, bStart: number, bEnd: number): boolean {
   return aStart < bEnd && bStart < aEnd;
 }
 
@@ -86,22 +86,12 @@ export function computeFreeSlotsForService(
   return computeFreeSlots(relevantShifts, relevantBusy, durationMin, stepMin);
 }
 
-/** Межі груп часу за UTC-годиною початку слота. */
-const MORNING_END_HOUR = 12; // [00:00, 12:00) — ранок
-const AFTERNOON_END_HOUR = 17; // [12:00, 17:00) — день; [17:00, 24:00) — вечір
-
-function timeGroupOf(slot: Slot): TimeGroup {
-  const hour = new Date(slot.startTime).getUTCHours();
-  if (hour < MORNING_END_HOUR) return "morning";
-  if (hour < AFTERNOON_END_HOUR) return "afternoon";
-  return "evening";
-}
-
-/** Групує слоти на Ранок / День / Вечір. Усі три ключі присутні завжди. */
-export function groupByTimeOfDay(slots: Slot[]): GroupedSlots {
-  const grouped: GroupedSlots = { morning: [], afternoon: [], evening: [] };
-  for (const slot of slots) {
-    grouped[timeGroupOf(slot)].push(slot);
-  }
-  return grouped;
+/**
+ * Спеціалісти, які надають УСІ задані послуги (перетин їхніх `specialistIds`).
+ * Порожній список послуг → порожній перетин. Використовують і BFF, і UI.
+ */
+export function commonSpecialistIds(services: Service[]): string[] {
+  if (services.length === 0) return [];
+  const sets = services.map((s) => new Set(s.specialistIds));
+  return [...sets[0]].filter((id) => sets.every((set) => set.has(id)));
 }

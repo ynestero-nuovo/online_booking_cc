@@ -3,29 +3,26 @@
  *
  * Поєднує провайдера даних (`getProvider`) з чистим рушієм доступності
  * (`src/domain/availability.ts`). Роути `app/api` мають лишатися тонкими й
- * викликати ці функції. Час — ISO/UTC.
+ * викликати ці функції. Час — ISO/UTC. Форми відповідей — у `./contracts`.
  *
  * Множинний вибір: за раз можна обрати кілька послуг — тривалість сумується, а
  * шукаємо лише спеціалістів, які надають УСІ обрані послуги (перетин).
  */
 
 import {
+  commonSpecialistIds,
   computeFreeSlots,
   computeFreeSlotsForService,
-  groupByTimeOfDay,
 } from "@/domain/availability";
-import type {
-  Booking,
-  BookingRequest,
-  Category,
-  GroupedSlots,
-  IsoDate,
-  Service,
-  Slot,
-  Specialist,
-} from "@/domain/types";
+import type { Booking, BookingRequest, Service, Slot } from "@/domain/types";
 import { getProvider } from "@/lib/config";
+import { addDaysIso, todayIsoDate } from "@/lib/date";
 import type { DateRange } from "@/integration/ports";
+import type {
+  AvailabilityResponse,
+  ServicesResponse,
+  SpecialistWithAvailability,
+} from "./contracts";
 
 /** Крок сітки часу у хвилинах (на скільки дробимо зміну). */
 export const STEP_MIN = 30;
@@ -45,21 +42,7 @@ export class HttpError extends Error {
   }
 }
 
-function addDays(isoDate: IsoDate, days: number): IsoDate {
-  const ms = Date.parse(`${isoDate}T00:00:00Z`) + days * 86_400_000;
-  return new Date(ms).toISOString().slice(0, 10);
-}
-
-function todayUtc(): IsoDate {
-  return new Date().toISOString().slice(0, 10);
-}
-
 // ───────────────────────── Спеціалісти ─────────────────────────
-
-export interface SpecialistWithAvailability extends Specialist {
-  /** Найближча дата з вільним слотом (за дефолтною тривалістю) або null. */
-  nearestFreeDate: IsoDate | null;
-}
 
 /**
  * Спеціалісти + найближчий вільний день кожного. День рахуємо за дефолтною
@@ -67,8 +50,8 @@ export interface SpecialistWithAvailability extends Specialist {
  */
 export async function getSpecialistsWithAvailability(): Promise<SpecialistWithAvailability[]> {
   const provider = getProvider();
-  const from = todayUtc();
-  const range: DateRange = { from, to: addDays(from, NEAREST_HORIZON_DAYS) };
+  const from = todayIsoDate();
+  const range: DateRange = { from, to: addDaysIso(from, NEAREST_HORIZON_DAYS) };
 
   const [specialists, shifts, busy] = await Promise.all([
     provider.getSpecialists(),
@@ -86,12 +69,7 @@ export async function getSpecialistsWithAvailability(): Promise<SpecialistWithAv
 
 // ───────────────────────── Послуги ─────────────────────────
 
-export interface ServicesResult {
-  categories: Category[];
-  services: Service[];
-}
-
-export async function getServicesWithCategories(): Promise<ServicesResult> {
+export async function getServicesWithCategories(): Promise<ServicesResponse> {
   const provider = getProvider();
   const [categories, services] = await Promise.all([
     provider.getCategories(),
@@ -134,8 +112,7 @@ function dedupeByStartTime(slots: Slot[]): Slot[] {
 
 /** Спеціалісти, які надають УСІ обрані послуги (перетин), з опц. звуженням. */
 function intersectSpecialists(services: Service[], specialistId?: string): string[] {
-  const sets = services.map((s) => new Set(s.specialistIds));
-  const intersection = [...sets[0]].filter((id) => sets.every((set) => set.has(id)));
+  const intersection = commonSpecialistIds(services);
   if (!specialistId) return intersection;
   if (!intersection.includes(specialistId)) {
     throw new HttpError(400, "Обраний спеціаліст не надає всі обрані послуги.");
@@ -154,16 +131,8 @@ export interface AvailabilityQuery {
   dedup?: boolean;
 }
 
-export interface AvailabilityResult {
-  serviceIds: string[];
-  durationMin: number;
-  range: DateRange;
-  slots: Slot[];
-  groups: GroupedSlots;
-}
-
-/** Згруповані вільні слоти для набору послуг (сумарна тривалість). */
-export async function getAvailability(query: AvailabilityQuery): Promise<AvailabilityResult> {
+/** Вільні слоти для набору послуг (сумарна тривалість), відсортовані за часом. */
+export async function getAvailability(query: AvailabilityQuery): Promise<AvailabilityResponse> {
   const provider = getProvider();
   const services = await resolveServices(query.serviceIds);
   const duration = totalDuration(services);
@@ -185,7 +154,6 @@ export async function getAvailability(query: AvailabilityQuery): Promise<Availab
     durationMin: duration,
     range: query.range,
     slots,
-    groups: groupByTimeOfDay(slots),
   };
 }
 

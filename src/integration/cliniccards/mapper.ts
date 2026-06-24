@@ -1,5 +1,6 @@
 /**
- * Мапінг сирих відповідей Cliniccards → доменні типи. Чисті функції.
+ * Мапінг сирих відповідей Cliniccards → доменні типи + побудова нотатки візиту.
+ * Чисті функції.
  *
  * Особливості Cliniccards:
  * - окремого ендпоінта спеціалістів немає → виводимо їх з унікальних doctor_id у змінах;
@@ -9,12 +10,16 @@
  */
 
 import type { Busy, Shift, Specialist } from "@/domain/types";
+import { overlaps } from "@/domain/availability";
 import { kyivWallToUtcIso, utcIsoToKyivParts } from "./timezone";
 import type { RawShift, RawSpace, RawVisit } from "./client";
 import { STAFF_BY_DOCTOR_ID } from "./staff";
 
 /** Статуси візитів, що НЕ блокують час (слот лишається вільним). */
 const NON_BLOCKING_STATUSES = new Set(["CANCELLED"]);
+
+/** Стандартний перший рядок нотатки для записів із цього застосунку. */
+const ONLINE_BOOKING_NOTE = "З онлайн запису";
 
 export function shiftToDomain(raw: RawShift): Shift {
   const startTime = kyivWallToUtcIso(raw.shift_start);
@@ -51,10 +56,6 @@ export function visitToBusy(raw: RawVisit): Busy | null {
   };
 }
 
-function overlaps(aStart: number, aEnd: number, bStart: number, bEnd: number): boolean {
-  return aStart < bEnd && bStart < aEnd;
-}
-
 /**
  * Резерви кабінетів → Busy для лікарів. Для кожного резерву знаходимо зміни в тому ж
  * кабінеті, що перетинаються за часом, і блокуємо відповідних лікарів.
@@ -79,4 +80,16 @@ export function spacesToBusy(spaces: RawSpace[], shifts: RawShift[]): Busy[] {
     }
   }
   return result;
+}
+
+/**
+ * Текст нотатки візиту: стандартний перший рядок «З онлайн запису», далі назви
+ * обраних послуг (кожна з нового рядка), останнім — коментар клієнта (якщо є).
+ * Обрізається до `maxLen` символів (Cliniccards: note ≤ 400).
+ */
+export function buildVisitNote(serviceNames: string[], comment?: string, maxLen = 400): string {
+  const lines = [ONLINE_BOOKING_NOTE, ...serviceNames];
+  const trimmed = comment?.trim();
+  if (trimmed) lines.push(trimmed);
+  return lines.join("\n").slice(0, maxLen);
 }

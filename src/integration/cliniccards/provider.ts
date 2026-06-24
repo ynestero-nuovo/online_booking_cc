@@ -14,25 +14,18 @@ import type {
   Shift,
   Specialist,
 } from "@/domain/types";
+import { addDaysIso, todayIsoDate } from "@/lib/date";
+import { digitsOnly } from "@/lib/phone";
 import type { BookingProvider, DateRange } from "../ports";
 import { CliniccardsClient, type CliniccardsClientOptions } from "./client";
 import { CLINICCARDS_CATEGORIES, CLINICCARDS_SERVICES, serviceDurationMin } from "./catalog";
-import { deriveSpecialists, shiftToDomain, spacesToBusy, visitToBusy } from "./mapper";
+import { buildVisitNote, deriveSpecialists, shiftToDomain, spacesToBusy, visitToBusy } from "./mapper";
 import { utcIsoToKyivParts } from "./timezone";
 
 /** Вікно (днів), у якому збираємо унікальних спеціалістів зі змін. */
 const SPECIALIST_WINDOW_DAYS = 60;
 /** Статус, з яким створюємо онлайн-запис. */
 const ONLINE_BOOKING_STATUS = "BOOKING";
-
-function addDays(isoDate: string, days: number): string {
-  const ms = Date.parse(`${isoDate}T00:00:00Z`) + days * 86_400_000;
-  return new Date(ms).toISOString().slice(0, 10);
-}
-
-function todayUtcDate(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 function roundTo5(time: string): string {
   const [h, m] = time.split(":").map(Number);
@@ -57,11 +50,6 @@ function mapStatus(raw: string): BookingStatus {
   }
 }
 
-/** Лишаємо тільки цифри: Cliniccards шукає/зберігає телефон без не-цифрових символів. */
-function normalizePhone(phone: string): string {
-  return phone.replace(/\D/g, "");
-}
-
 function splitName(full: string): { firstname: string; lastname: string } {
   const parts = full.trim().split(/\s+/);
   if (parts.length >= 2) {
@@ -75,7 +63,7 @@ export function createCliniccardsProvider(opts: CliniccardsClientOptions): Booki
 
   /** Зміни в межах діапазону (розширюємо запит ±1 день під межі таймзони). */
   async function loadShiftsInRange(range: DateRange): Promise<Shift[]> {
-    const raw = await client.getShifts(addDays(range.from, -1), addDays(range.to, 1));
+    const raw = await client.getShifts(addDaysIso(range.from, -1), addDaysIso(range.to, 1));
     return raw
       .map(shiftToDomain)
       .filter((s) => s.date >= range.from && s.date <= range.to);
@@ -83,8 +71,8 @@ export function createCliniccardsProvider(opts: CliniccardsClientOptions): Booki
 
   return {
     async getSpecialists(): Promise<Specialist[]> {
-      const from = todayUtcDate();
-      const raw = await client.getShifts(from, addDays(from, SPECIALIST_WINDOW_DAYS));
+      const from = todayIsoDate();
+      const raw = await client.getShifts(from, addDaysIso(from, SPECIALIST_WINDOW_DAYS));
       return deriveSpecialists(raw);
     },
 
@@ -101,8 +89,8 @@ export function createCliniccardsProvider(opts: CliniccardsClientOptions): Booki
     },
 
     async getBusy(range: DateRange) {
-      const from = addDays(range.from, -1);
-      const to = addDays(range.to, 1);
+      const from = addDaysIso(range.from, -1);
+      const to = addDaysIso(range.to, 1);
       const [visits, spaces, shifts] = await Promise.all([
         client.getVisits(from, to),
         client.getSpaces(from, to),
@@ -123,7 +111,7 @@ export function createCliniccardsProvider(opts: CliniccardsClientOptions): Booki
       }
 
       // 1. Пацієнт: знайти за телефоном (нормалізованим) або створити.
-      const phone = normalizePhone(request.patient.phone);
+      const phone = digitsOnly(request.patient.phone);
       const found = phone ? await client.findPatientByPhone(phone) : [];
       let patientId = found[0]?.patient_id;
       if (!patientId) {
@@ -144,13 +132,12 @@ export function createCliniccardsProvider(opts: CliniccardsClientOptions): Booki
       const endIso = new Date(Date.parse(request.startTime) + duration * 60_000).toISOString();
       const end = utcIsoToKyivParts(endIso);
 
-      // 4. Нотатка: кожна обрана послуга з нового рядка, коментар клієнта — останнім.
-      const noteLines = request.serviceIds
+      // 4. Нотатка: стандартний перший рядок «З онлайн запису», далі назви обраних
+      //    послуг (кожна з нового рядка), коментар клієнта — останнім.
+      const serviceNames = request.serviceIds
         .map((id) => CLINICCARDS_SERVICES.find((s) => s.id === id)?.name)
         .filter((n): n is string => Boolean(n));
-      const comment = request.comment?.trim();
-      if (comment) noteLines.push(comment);
-      const note = noteLines.join("\n").slice(0, 400); // Cliniccards: note до 400 символів
+      const note = buildVisitNote(serviceNames, request.comment);
 
       // 5. Створення візиту.
       const createdVisit = await client.createVisit({

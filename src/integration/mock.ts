@@ -16,7 +16,8 @@ import type {
   Specialist,
 } from "@/domain/types";
 import type { BookingProvider, DateRange } from "./ports";
-import { CATALOG_CATEGORIES, CATALOG_SERVICES, type DoctorKey } from "./catalog";
+import { CATALOG_CATEGORIES, type DoctorKey } from "./catalog";
+import { catalogToServices } from "./catalog-services";
 import { kyivWallToUtcIso } from "@/lib/timezone";
 
 const SPECIALISTS: Specialist[] = [
@@ -39,14 +40,7 @@ const MOCK_ID: Record<DoctorKey, string> = {
 };
 
 // Прив'язка послуга→спеціаліст береться з каталогу (providers із прайс-мапи).
-const SERVICES: Service[] = CATALOG_SERVICES.map((s) => ({
-  id: s.id,
-  name: s.name,
-  categoryId: s.categoryId,
-  durationMin: s.durationMin,
-  price: s.price,
-  specialistIds: s.providers.map((k) => MOCK_ID[k]),
-}));
+const SERVICES: Service[] = catalogToServices(MOCK_ID);
 
 /** Робочий день у КИЇВСЬКИХ годинах: 10:00–20:00, без вихідних. */
 const SHIFT_START_HOUR = 10;

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist } from "next/font/google";
 import "./globals.css";
+import { APP_META } from "@/lib/salon";
 import ServiceWorkerRegister from "@/ui/ServiceWorkerRegister";
 
 const geistSans = Geist({
@@ -8,18 +9,13 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "Nuovo skin — онлайн-запис",
-  description: "Онлайн-запис до клініки Nuovo skin",
+  title: APP_META.title,
+  description: APP_META.description,
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Nuovo skin",
+    title: APP_META.shortName,
   },
 };
 
@@ -38,8 +34,8 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      lang="uk"
+      className={`${geistSans.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         {children}
