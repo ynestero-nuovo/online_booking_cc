@@ -38,6 +38,7 @@ export function computeFreeSlots(
   busy: Busy[],
   durationMin: number,
   stepMin: number,
+  notBeforeMs?: number,
 ): Slot[] {
   if (durationMin <= 0 || stepMin <= 0) return [];
 
@@ -51,6 +52,8 @@ export function computeFreeSlots(
     const relevantBusy = busy.filter((b) => b.specialistId === shift.specialistId);
 
     for (let start = shiftStart; start + durationMs <= shiftEnd; start += stepMs) {
+      // Пропускаємо слоти, що починаються в минулому (notBeforeMs — зазвичай «зараз»).
+      if (notBeforeMs !== undefined && start < notBeforeMs) continue;
       const end = start + durationMs;
       const blocked = relevantBusy.some((b) =>
         overlaps(start, end, toMs(b.startTime), toMs(b.endTime)),
@@ -79,11 +82,12 @@ export function computeFreeSlotsForService(
   specialistIds: string[],
   durationMin: number,
   stepMin: number,
+  notBeforeMs?: number,
 ): Slot[] {
   const allowed = new Set(specialistIds);
   const relevantShifts = shifts.filter((s) => allowed.has(s.specialistId));
   const relevantBusy = busy.filter((b) => allowed.has(b.specialistId));
-  return computeFreeSlots(relevantShifts, relevantBusy, durationMin, stepMin);
+  return computeFreeSlots(relevantShifts, relevantBusy, durationMin, stepMin, notBeforeMs);
 }
 
 /**

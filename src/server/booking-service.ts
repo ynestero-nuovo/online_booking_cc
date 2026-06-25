@@ -61,7 +61,7 @@ export async function getSpecialistsWithAvailability(): Promise<SpecialistWithAv
 
   return specialists.map((sp) => {
     const mineShifts = shifts.filter((s) => s.specialistId === sp.id);
-    const free = computeFreeSlots(mineShifts, busy, DEFAULT_SLOT_MIN, STEP_MIN);
+    const free = computeFreeSlots(mineShifts, busy, DEFAULT_SLOT_MIN, STEP_MIN, Date.now());
     const nearestFreeDate = free.length > 0 ? free[0].startTime.slice(0, 10) : null;
     return { ...sp, nearestFreeDate };
   });
@@ -143,7 +143,7 @@ export async function getAvailability(query: AvailabilityQuery): Promise<Availab
     provider.getBusy(query.range),
   ]);
 
-  const all = computeFreeSlotsForService(shifts, busy, specialistIds, duration, STEP_MIN);
+  const all = computeFreeSlotsForService(shifts, busy, specialistIds, duration, STEP_MIN, Date.now());
   // «Будь-який фахівець» (без звуження): один слот на час, щоб не дублювати кнопки.
   // dedup=false лишає по слоту на кожного вільного лікаря (для пошуку «хто вільний на час»).
   const slots =
@@ -165,6 +165,11 @@ async function assertSlotFree(request: BookingRequest): Promise<void> {
   intersectSpecialists(services, request.specialistId); // кине 400, якщо не надає всі
   const duration = totalDuration(services);
 
+  const now = Date.now();
+  if (Date.parse(request.startTime) < now) {
+    throw new HttpError(409, "Цей час уже минув. Оновіть доступність і спробуйте ще раз.");
+  }
+
   const date = request.startTime.slice(0, 10);
   const range: DateRange = { from: date, to: date };
   const provider = getProvider();
@@ -174,7 +179,7 @@ async function assertSlotFree(request: BookingRequest): Promise<void> {
   ]);
 
   const mineShifts = shifts.filter((s) => s.specialistId === request.specialistId);
-  const free = computeFreeSlots(mineShifts, busy, duration, STEP_MIN);
+  const free = computeFreeSlots(mineShifts, busy, duration, STEP_MIN, now);
   const available = free.some((slot) => slot.startTime === request.startTime);
   if (!available) {
     throw new HttpError(409, "Обраний час уже зайнято. Оновіть доступність і спробуйте ще раз.");
