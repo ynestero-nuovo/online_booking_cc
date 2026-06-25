@@ -109,6 +109,17 @@ describe("computeFreeSlots", () => {
     const slots = computeFreeSlots([shift(17, 18), shift(9, 10)], [], 60, 60);
     expect(slots.map((s) => s.startTime)).toEqual([at(9), at(17)]);
   });
+
+  it("відкидає слоти, що починаються раніше notBefore (минулі)", () => {
+    // Зміна 09:00–12:00, крок 60, послуга 60; notBefore = 10:00 → лишаються 10:00, 11:00.
+    const slots = computeFreeSlots([shift(9, 12)], [], 60, 60, Date.parse(at(10)));
+    expect(slots.map((s) => s.startTime)).toEqual([at(10), at(11)]);
+  });
+
+  it("слот рівно на notBefore лишається (межа включно)", () => {
+    const slots = computeFreeSlots([shift(9, 12)], [], 60, 60, Date.parse(at(9)));
+    expect(slots.map((s) => s.startTime)).toEqual([at(9), at(10), at(11)]);
+  });
 });
 
 describe("computeFreeSlotsForService", () => {
