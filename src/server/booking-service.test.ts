@@ -15,9 +15,12 @@ function next7Days(): DateRange {
   return { from, to: toDate.toISOString().slice(0, 10) };
 }
 
-// svc-0 = "Консультація дерматологічна" (60 хв) у згенерованому каталозі.
-const SERVICE_ID = "svc-0";
+// Реальні id з price-items.json:
+// 1655815 = "Консультація первинна лікаря-дерматолога" (60 хв; лікарі 79264, 79716, 94758).
+// 1655820 = "Азелаїново-саліциловий пілінг ОБЛИЧЧЯ Simildiet" (60 хв; усі 5 лікарів, у т.ч. 79264).
+const SERVICE_ID = "1655815";
 const SERVICE_IDS = [SERVICE_ID];
+const DOCTOR_ID = "79264"; // Самоукова — надає обидві послуги вище.
 
 describe("getServicesWithCategories", () => {
   it("повертає категорії у порядку order", async () => {
@@ -37,8 +40,11 @@ describe("getAvailability", () => {
   });
 
   it("сумує тривалість кількох послуг", async () => {
-    // svc-0 (60) + svc-1 (60) = 120 хв.
-    const result = await getAvailability({ serviceIds: ["svc-0", "svc-1"], range: next7Days() });
+    // 1655815 (60) + 1655820 (60) = 120 хв.
+    const result = await getAvailability({
+      serviceIds: ["1655815", "1655820"],
+      range: next7Days(),
+    });
     expect(result.durationMin).toBe(120);
     expect(result.slots.length).toBeGreaterThan(0);
   });
@@ -51,7 +57,7 @@ describe("getAvailability", () => {
 
   it("404 для невідомої послуги", async () => {
     await expect(
-      getAvailability({ serviceIds: ["svc-none"], range: next7Days() }),
+      getAvailability({ serviceIds: ["no-such-id"], range: next7Days() }),
     ).rejects.toMatchObject({ status: 404 });
   });
 });
@@ -93,18 +99,18 @@ describe("createBooking", () => {
   });
 
   it("бронь кількох послуг резервує СУМАРНУ тривалість (не лише першої)", async () => {
-    // svc-8/svc-9 — консультації, які надає sp-samoukova (60+60=120 хв).
+    // 1655815 + 1655820 — обидві надає лікар 79264 (60 + 60 = 120 хв).
     const av = await getAvailability({
-      serviceIds: ["svc-8", "svc-9"],
-      specialistId: "sp-samoukova",
+      serviceIds: ["1655815", "1655820"],
+      specialistId: DOCTOR_ID,
       range: next7Days(),
     });
     expect(av.durationMin).toBe(120);
     const slot = av.slots[0];
 
     await createBooking({
-      specialistId: "sp-samoukova",
-      serviceIds: ["svc-8", "svc-9"],
+      specialistId: DOCTOR_ID,
+      serviceIds: ["1655815", "1655820"],
       startTime: slot.startTime,
       patient: { name: "Тест", phone: "+380501234567" },
     });
@@ -112,8 +118,8 @@ describe("createBooking", () => {
     // Початок другої послуги (T+60) має бути заблокований — інакше резерв був лише 60 хв.
     const t60 = new Date(Date.parse(slot.startTime) + 60 * 60_000).toISOString();
     const after = await getAvailability({
-      serviceIds: ["svc-8"],
-      specialistId: "sp-samoukova",
+      serviceIds: ["1655815"],
+      specialistId: DOCTOR_ID,
       range: next7Days(),
     });
     expect(after.slots.some((s) => s.startTime === t60)).toBe(false);

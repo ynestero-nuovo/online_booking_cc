@@ -1,8 +1,9 @@
 /**
  * MockProvider — реалізація BookingProvider на фейкових даних у пам'яті.
  *
- * Призначення: розробка UI/BFF та домену без реального Cliniccards (Крок 9).
- * Зміни генеруються відносно поточної дати на 7 днів уперед. Час — ISO/UTC.
+ * Призначення: розробка UI/BFF та домену без реального Cliniccards.
+ * Зміни генеруються відносно поточної дати на HORIZON_DAYS днів уперед. Час — ISO/UTC.
+ * Спеціалісти мають РЕАЛЬНІ `doctor_id` (як у Cliniccards), тож каталог працює без мапінгу.
  */
 
 import type {
@@ -16,31 +17,21 @@ import type {
   Specialist,
 } from "@/domain/types";
 import type { BookingProvider, DateRange } from "./ports";
-import { CATALOG_CATEGORIES, type DoctorKey } from "./catalog";
-import { catalogToServices } from "./catalog-services";
+import { CATALOG_CATEGORIES, CATALOG_SERVICES } from "./catalog";
 import { kyivWallToUtcIso } from "@/lib/timezone";
 
 const SPECIALISTS: Specialist[] = [
-  { id: "sp-kovbasa", name: "Катерина Ковбаса", alias: "Катерина Ковбаса", role: "Головний лікар", photoUrl: "/specialists/kovbasa.png" },
-  { id: "sp-samoukova", name: "Вікторія Самоукова", alias: "Вікторія Самоукова", role: "Лікар", photoUrl: "/specialists/samoukova.png" },
-  { id: "sp-kashytska", name: "Ольга Кашицька", alias: "Ольга Кашицька", role: "Лікар", photoUrl: "/specialists/kashytska.png" },
-  { id: "sp-movchan", name: "Тетяна Мовчан", alias: "Тетяна Мовчан", role: "Лікар", photoUrl: "/specialists/movchan.png" },
-  { id: "sp-kalashnik", name: "Катерина Калашнік", alias: "Катерина Калашнік", role: "Косметолог", photoUrl: "/specialists/kalashnik.png" },
+  { id: "79215", name: "Ковбаса Катерина", alias: "Ковбаса Катерина", role: "Головний лікар", photoUrl: "/specialists/kovbasa.png" },
+  { id: "79264", name: "Самоукова Вікторія", alias: "Самоукова Вікторія", role: "Лікар", photoUrl: "/specialists/samoukova.png" },
+  { id: "79716", name: "Кашицька Ольга", alias: "Кашицька Ольга", role: "Лікар", photoUrl: "/specialists/kashytska.png" },
+  { id: "94758", name: "Мовчан Тетяна", alias: "Мовчан Тетяна", role: "Лікар", photoUrl: "/specialists/movchan.png" },
+  { id: "88387", name: "Калашнік Катерина", alias: "Калашнік Катерина", role: "Косметолог", photoUrl: "/specialists/kalashnik.png" },
 ];
 
 const CATEGORIES: Category[] = CATALOG_CATEGORIES;
 
-/** Ключ лікаря з каталогу → mock-id спеціаліста. */
-const MOCK_ID: Record<DoctorKey, string> = {
-  kovbasa: "sp-kovbasa",
-  samoukova: "sp-samoukova",
-  kashytska: "sp-kashytska",
-  movchan: "sp-movchan",
-  kalashnik: "sp-kalashnik",
-};
-
-// Прив'язка послуга→спеціаліст береться з каталогу (providers із прайс-мапи).
-const SERVICES: Service[] = catalogToServices(MOCK_ID);
+// Послуги беруться зі спільного каталогу як є (specialistIds = реальні doctor_id).
+const SERVICES: Service[] = CATALOG_SERVICES;
 
 /** Робочий день у КИЇВСЬКИХ годинах: 10:00–20:00, без вихідних. */
 const SHIFT_START_HOUR = 10;
@@ -104,16 +95,16 @@ function buildBusy(): Busy[] {
 
   return [
     // Ковбаса: ранковий візит сьогодні
-    { specialistId: "sp-kovbasa", startTime: isoAt(day0, 10), endTime: isoAt(day0, 11) },
+    { specialistId: "79215", startTime: isoAt(day0, 10), endTime: isoAt(day0, 11) },
     // Калашнік: обідній резерв сьогодні
-    { specialistId: "sp-kalashnik", startTime: isoAt(day0, 14), endTime: isoAt(day0, 15) },
+    { specialistId: "88387", startTime: isoAt(day0, 14), endTime: isoAt(day0, 15) },
     // Самоукова: візит завтра
-    { specialistId: "sp-samoukova", startTime: isoAt(day1, 12), endTime: isoAt(day1, 13) },
+    { specialistId: "79264", startTime: isoAt(day1, 12), endTime: isoAt(day1, 13) },
     // Кашицька: два візити підряд завтра
-    { specialistId: "sp-kashytska", startTime: isoAt(day1, 11), endTime: isoAt(day1, 13) },
-    { specialistId: "sp-kashytska", startTime: isoAt(day1, 13), endTime: isoAt(day1, 15) },
+    { specialistId: "79716", startTime: isoAt(day1, 11), endTime: isoAt(day1, 13) },
+    { specialistId: "79716", startTime: isoAt(day1, 13), endTime: isoAt(day1, 15) },
     // Мовчан: пізній візит післязавтра
-    { specialistId: "sp-movchan", startTime: isoAt(day2, 18), endTime: isoAt(day2, 20) },
+    { specialistId: "94758", startTime: isoAt(day2, 18), endTime: isoAt(day2, 20) },
   ];
 }
 

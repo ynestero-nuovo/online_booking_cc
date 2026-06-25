@@ -75,8 +75,8 @@ export async function getServicesWithCategories(): Promise<ServicesResponse> {
     provider.getCategories(),
     provider.getServices(),
   ]);
-  categories.sort((a, b) => a.order - b.order);
-  return { categories, services };
+  const sorted = [...categories].sort((a, b) => a.order - b.order);
+  return { categories: sorted, services };
 }
 
 async function resolveServices(serviceIds: string[]): Promise<Service[]> {

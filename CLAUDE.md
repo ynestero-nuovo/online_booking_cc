@@ -18,7 +18,7 @@
 - Auth — заголовок `Token`; конверт відповіді `{ data, result, error }`; база `https://cliniccards.com/api`.
 - `src/integration/cliniccards/`: `client.ts` (HTTP, **server-only**), `mapper.ts`, `provider.ts`,
   `timezone.ts`, `catalog.ts`, `staff.ts`.
-- Реальні `doctor_id` (у `staff.ts` — роль і фото, у `catalog.ts` — мапа ключів):
+- Реальні `doctor_id` (роль і фото — у `staff.ts`):
   `79215` Ковбаса Катерина (Головний лікар), `79264` Самоукова Вікторія, `79716` Кашицька Ольга,
   `94758` Мовчан Тетяна (Лікарі), `88387` Калашнік Катерина (Косметолог).
 - `getBusy` = `/visits` (крім статусу `CANCELLED`) + `/schedule-spaces` (резерв кабінету →
@@ -33,12 +33,13 @@
   Тому послуги фіксуються **лише текстом у `note`**; наш каталог — окреме джерело (нижче).
 
 ### Каталог послуг
-- **АВТОГЕНЕРОВАНИЙ** `src/integration/catalog.ts` ← `src/lib/price_spec_map/pricemap.xlsx`
-  (аркуш «прайс для онлайн запису») через `scripts/generate-catalog.ps1`. **Не редагувати руками.**
-- **25 категорій / 217 послуг** з реальними тривалостями (30/45/60/90/120 хв) і цінами.
-- `CatalogService.providers` — ключі лікарів (`kovbasa|samoukova|kashytska|movchan|kalashnik`);
-  порожня клітинка тривалості в матриці = лікар НЕ надає послугу. Mock маплить ключі на `sp-*`,
-  Cliniccards — на реальні `doctor_id`. Послуги «(головний лікар)» = окремі позиції Ковбаси з вищою ціною.
+- Джерело правди — `src/integration/price-items.json` (експорт із Cliniccards з РЕАЛЬНИМИ id).
+  `src/integration/catalog.ts` будує з нього `CATALOG_CATEGORIES`/`CATALOG_SERVICES`.
+  (Старий xlsx-пайплайн і `scripts/generate-catalog.ps1` прибрано.)
+- **26 категорій / 253 послуги** з реальними тривалостями (10/30/45/60/65/90/120 хв) і цінами.
+- `Service.id`/`Category.id` — реальні id Cliniccards; `Service.specialistIds` — реальні `doctor_id`
+  (ключі `items`), тож і mock, і Cliniccards беруть каталог БЕЗ мапінгу. Якщо тривалість послуги
+  різна у різних лікарів (рідко — 2 позиції), беремо максимум.
 
 ### Домен і час
 - `src/domain/`: `types.ts` (без логіки) + `availability.ts` (чисті функції). Час — **ISO/UTC**.
@@ -79,13 +80,13 @@ Next.js 16 (App Router, Turbopack), TypeScript (strict), Tailwind CSS v4, Vitest
 - Секрети (ключ Cliniccards тощо) — тільки в `.env`/env Render. Ніколи в клієнт, ніколи в git, ніколи тут.
 - Фронт ходить **ТІЛЬКИ** у власні `/api` роути, ніколи напряму в Cliniccards.
 - Доступність рахуємо самі (формула вище). Час — ISO-рядки (UTC); показ — київський.
-- Каталог/політики/лого/фото — **генеровані**: після зміни джерела запускай відповідний скрипт (нижче).
+- Каталог — з `src/integration/price-items.json` (експорт із CRM): правити експорт, не `catalog.ts`.
+- Політики/лого/фото — **генеровані**: після зміни джерела запускай відповідний скрипт (нижче).
 - Працюємо малими кроками; після кроку — git commit (+ push, бо Render autoDeploy).
 
 ## Commands
 - dev: `npm run dev` · test: `npm run test` · lint: `npm run lint` · build: `npm run build`
 - Регенерації:
-  - каталог: `powershell -File scripts/generate-catalog.ps1` (← `pricemap.xlsx`)
   - політики: `node scripts/generate-policy.mjs` (← `src/lib/policy/*.md`)
   - лого/іконки: `node scripts/generate-logo-assets.mjs` · фото: `node scripts/resize-photos.mjs`
 
@@ -95,5 +96,5 @@ Next.js 16 (App Router, Turbopack), TypeScript (strict), Tailwind CSS v4, Vitest
 - **Немає антиспаму** на публічному `POST /api/bookings` (будь-хто може створювати реальні візити).
 - **Немає кешу API** під ліміт Cliniccards (60 req/хв) — ризик під трафіком.
 - «Будь-який фахівець» + одночасне бронювання автопризначеного лікаря → відновлюваний `409`.
-- Ціни/тривалості/провіжн — джерело правди `pricemap.xlsx`; правити там і перегенеровувати.
+- Ціни/тривалості/провіжн — джерело правди `src/integration/price-items.json` (експорт із CRM).
 - `docs/payloads/` — приклади реальних пейлоадів (ланцюг створення запису + GET-відповіді).

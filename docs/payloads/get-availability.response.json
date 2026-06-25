@@ -1,7 +1,7 @@
 {
-  "_request": "GET /api/availability?serviceIds=svc-8,svc-9&from=2026-06-23&to=2026-06-30",
+  "_request": "GET /api/availability?serviceIds=1655815,1655820&from=2026-06-23&to=2026-06-30",
   "_note": "durationMin = сума обраних послуг (60+60). Без specialistId — слоти всіх лікарів, що надають усі послуги, по одному на час (дедуплікація). Час — UTC. Слоти скорочено.",
-  "serviceIds": ["svc-8", "svc-9"],
+  "serviceIds": ["1655815", "1655820"],
   "durationMin": 120,
   "range": { "from": "2026-06-23", "to": "2026-06-30" },
   "slots": [

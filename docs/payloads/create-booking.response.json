@@ -1,7 +1,7 @@
 {
   "booking": {
     "specialistId": "79264",
-    "serviceIds": ["svc-8", "svc-9"],
+    "serviceIds": ["1655815", "1655820"],
     "startTime": "2026-06-23T07:00:00.000Z",
     "patient": {
       "name": "Олена Петренко",

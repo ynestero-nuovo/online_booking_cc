@@ -149,7 +149,7 @@ UI → BFF (серверні роути `app/api`) → ports (інтерфейс
 Для безпечної розробки — `PROVIDER=mock`.
 
 **Як запустити знову:** `npm run dev` (http://localhost:3000). Тести — `npm run test`.
-Перегенерувати каталог із прайсу — `powershell -File scripts/generate-catalog.ps1 "<шлях.xlsx>"`.
+Каталог — зі `src/integration/price-items.json` (експорт із CRM); окремий крок генерації не потрібен.
 
 **Відкриті TODO (не блокери):**
 - ролі лікарів (Cliniccards API не віддає — зараз порожні);

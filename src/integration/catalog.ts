@@ -1,271 +1,51 @@
-// AUTO-GENERATED from pricemap.xlsx (sheet 2: online-booking price/duration map)
-// by scripts/generate-catalog.ps1. Do not edit by hand.
-// price = UAH; durationMin = minutes; providers = doctors that offer the service
-// (empty duration cell in the sheet => specialist does not provide it).
+/**
+ * Каталог послуг/категорій. Джерело правди — `price-items.json` (експорт із Cliniccards
+ * з РЕАЛЬНИМИ id послуг/категорій/лікарів). Замінив старий xlsx-пайплайн.
+ *
+ * - `Service.id` / `Category.id` — реальні id Cliniccards (напр. "1655815" / "137160").
+ * - `Service.specialistIds` — реальні `doctor_id` (ключі `items`); ті самі id, що віддає
+ *   `/schedule-shifts`, тож і mock, і Cliniccards використовують каталог БЕЗ мапінгу.
+ * - `durationMin` — тривалість послуги; якщо у різних лікарів вона різна (рідко, 2 позиції),
+ *   беремо максимум (безпечно для резервування часу).
+ * - `Category.order` — порядок у довіднику категорій.
+ */
 
-import type { Category } from "@/domain/types";
+import type { Category, Service } from "@/domain/types";
+import priceItems from "./price-items.json";
 
-export type DoctorKey = "kovbasa" | "samoukova" | "kashytska" | "movchan" | "kalashnik";
-
-/** Catalog service; a provider maps providers -> its own specialist ids. */
-export interface CatalogService {
+interface RawPriceItem {
   id: string;
   name: string;
-  categoryId: string;
-  durationMin: number;
-  price: number;
-  providers: DoctorKey[];
+  group_id: string;
+  price: string;
+  /** doctor_id → тривалість у хвилинах. */
+  items: Record<string, number>;
+}
+interface PriceItemsFile {
+  /** doctor_id → ім'я (довідка; імена спеціалістів беремо зі staff.ts / CRM, не звідси). */
+  "_довідка_фахівці": Record<string, string>;
+  "_довідка_категорії": Record<string, string>;
+  priceItems: RawPriceItem[];
 }
 
-export const CATALOG_CATEGORIES: Category[] = [
-  { id: "cat-0", name: "Консультації Дерматологічні", order: 0 },
-  { id: "cat-1", name: "Фотоомолодження обличчя Lumecca", order: 1 },
-  { id: "cat-2", name: "Лікування Акне, Постакне, Рубці, Розацеа", order: 2 },
-  { id: "cat-3", name: "Пілінги", order: 3 },
-  { id: "cat-4", name: "Мезотерапія", order: 4 },
-  { id: "cat-5", name: "Ботулінотерапія ЖІНКИ", order: 5 },
-  { id: "cat-6", name: "Лазерне шліфування ResurFX", order: 6 },
-  { id: "cat-7", name: "Чистки", order: 7 },
-  { id: "cat-8", name: "Масажі", order: 8 },
-  { id: "cat-9", name: "Апарат Eve Ace of Face", order: 9 },
-  { id: "cat-10", name: "Ботулінотерапія ЧОЛОВІКИ", order: 10 },
-  { id: "cat-11", name: "Гіпергідроз ЖІНКИ", order: 11 },
-  { id: "cat-12", name: "Гіпергідроз ЧОЛОВІКИ", order: 12 },
-  { id: "cat-13", name: "Лікування мігрені препаратом Диспорт", order: 13 },
-  { id: "cat-14", name: "Біоревіталізація", order: 14 },
-  { id: "cat-15", name: "Контурна пластика губ", order: 15 },
-  { id: "cat-17", name: "Розчинення філера", order: 16 },
-  { id: "cat-18", name: "Контурна пластика Підборіддя, Скул", order: 17 },
-  { id: "cat-20", name: "Колагеностимулюючі препарати", order: 18 },
-  { id: "cat-21", name: "Заповнення заломів / бланшинг", order: 19 },
-  { id: "cat-22", name: "Стимуляція росту волосся", order: 20 },
-  { id: "cat-23", name: "Фотоомолодження тіла Lumecca", order: 21 },
-  { id: "cat-24", name: "Morpheus8 обличчя", order: 22 },
-  { id: "cat-25", name: "Morpheus8 тіло", order: 23 },
-  { id: "cat-26", name: "Ліполітики", order: 24 },
-];
+const data = priceItems as unknown as PriceItemsFile;
 
-export const CATALOG_SERVICES: CatalogService[] = [
-  { id: "svc-0", name: "Консультація дерматологічна (головний лікар)", categoryId: "cat-0", durationMin: 60, price: 1700, providers: ["kovbasa"] },
-  { id: "svc-1", name: "Консультація трихологічна  (головний лікар)", categoryId: "cat-0", durationMin: 60, price: 1700, providers: ["kovbasa"] },
-  { id: "svc-2", name: "Консультація трихологічна+ дерматологічна  (головний лікар)", categoryId: "cat-0", durationMin: 90, price: 2500, providers: ["kovbasa"] },
-  { id: "svc-3", name: "Повторна консультація  (головний лікар)", categoryId: "cat-0", durationMin: 30, price: 1000, providers: ["kovbasa"] },
-  { id: "svc-4", name: "Консультація косметологічна (Підбір догляду, індивідуальний план процедур)  (головний лікар)", categoryId: "cat-0", durationMin: 60, price: 1000, providers: ["kovbasa"] },
-  { id: "svc-5", name: "Дерматоскопія родимок або інших новоутворень  (головний лікар)", categoryId: "cat-0", durationMin: 60, price: 1350, providers: ["kovbasa"] },
-  { id: "svc-6", name: "Діагностика шкіри апаратом Puremi  (головний лікар)", categoryId: "cat-0", durationMin: 60, price: 1000, providers: ["kovbasa"] },
-  { id: "svc-7", name: "Пакет консультацій системне лікування (на весь період лікування)  (головний лікар)", categoryId: "cat-0", durationMin: 60, price: 10000, providers: ["kovbasa"] },
-  { id: "svc-8", name: "Консультація дерматологічна", categoryId: "cat-0", durationMin: 60, price: 1500, providers: ["samoukova", "kashytska", "movchan"] },
-  { id: "svc-9", name: "Консультація трихологічна", categoryId: "cat-0", durationMin: 60, price: 1500, providers: ["samoukova", "kashytska", "movchan"] },
-  { id: "svc-10", name: "Консультація трихологічна+ дерматологічна", categoryId: "cat-0", durationMin: 90, price: 2000, providers: ["samoukova", "kashytska", "movchan"] },
-  { id: "svc-11", name: "Повторна консультація", categoryId: "cat-0", durationMin: 30, price: 800, providers: ["samoukova", "kashytska", "movchan"] },
-  { id: "svc-12", name: "Консультація косметологічна (Підбір догляду, індивідуальний план процедур)", categoryId: "cat-0", durationMin: 60, price: 800, providers: ["samoukova", "kashytska", "movchan"] },
-  { id: "svc-13", name: "Дерматоскопія родимок або інших новоутворень", categoryId: "cat-0", durationMin: 60, price: 1350, providers: ["samoukova", "kashytska", "movchan"] },
-  { id: "svc-14", name: "Діагностика шкіри апаратом Puremi", categoryId: "cat-0", durationMin: 60, price: 1000, providers: ["samoukova", "kashytska", "movchan"] },
-  { id: "svc-15", name: "Пакет консультацій системне лікування (на весь період лікування)", categoryId: "cat-0", durationMin: 60, price: 8000, providers: ["samoukova", "kashytska", "movchan"] },
-  { id: "svc-16", name: "IPL Lumecca обличчя повністю", categoryId: "cat-1", durationMin: 30, price: 3700, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-17", name: "IPL Lumecca зона лоба", categoryId: "cat-1", durationMin: 30, price: 2300, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-18", name: "IPL Lumecca верхня губа", categoryId: "cat-1", durationMin: 30, price: 2000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-19", name: "IPL Lumecca носа", categoryId: "cat-1", durationMin: 30, price: 2400, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-20", name: "IPL Lumecca крила носа", categoryId: "cat-1", durationMin: 30, price: 2000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-21", name: "IPL Lumecca зона щок", categoryId: "cat-1", durationMin: 30, price: 2600, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-22", name: "IPL Lumecca 1см2", categoryId: "cat-1", durationMin: 30, price: 800, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-23", name: "Пілінг обличчя Acne Peel", categoryId: "cat-2", durationMin: 60, price: 2500, providers: ["kovbasa", "samoukova", "kashytska", "movchan", "kalashnik"] },
-  { id: "svc-24", name: "Пілінг обличчя Green Peel", categoryId: "cat-2", durationMin: 60, price: 2500, providers: ["kovbasa", "samoukova", "kashytska", "movchan", "kalashnik"] },
-  { id: "svc-25", name: "Пілінг обличчя Jessner Peel", categoryId: "cat-2", durationMin: 60, price: 2950, providers: ["kovbasa", "samoukova", "kashytska", "movchan", "kalashnik"] },
-  { id: "svc-26", name: "Ін'єкції Дипроспану у зону обличчя", categoryId: "cat-2", durationMin: 60, price: 2500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-27", name: "Ін'єкції  Дипроспану у зону спини", categoryId: "cat-2", durationMin: 60, price: 2500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-28", name: "Ін'єкції Флостерону у зону обличчя", categoryId: "cat-2", durationMin: 60, price: 2500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-29", name: "Ін'єкції Флостерону у зону спини", categoryId: "cat-2", durationMin: 60, price: 2500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-30", name: "Азелаїново-саліциловий пілінг ОБЛИЧЧЯ Simildiet", categoryId: "cat-3", durationMin: 60, price: 1500, providers: ["kovbasa", "samoukova", "kashytska", "movchan", "kalashnik"] },
-  { id: "svc-31", name: "Азелаїново-саліциловий пілінг ОБЛИЧЧЯ та ШИЇ Simildiet", categoryId: "cat-3", durationMin: 60, price: 2200, providers: ["kovbasa", "samoukova", "kashytska", "movchan", "kalashnik"] },
-  { id: "svc-32", name: "Азелаїново-саліциловий пілінг СПИНИ Simildiet", categoryId: "cat-3", durationMin: 60, price: 3000, providers: ["kovbasa", "samoukova", "kashytska", "movchan", "kalashnik"] },
-  { id: "svc-33", name: "Пілінг СПИНИ Acne Peel", categoryId: "cat-3", durationMin: 60, price: 4500, providers: ["kovbasa", "samoukova", "kashytska", "movchan", "kalashnik"] },
-  { id: "svc-34", name: "Пілінг ОБЛИЧЧЯ BioRePeel", categoryId: "cat-3", durationMin: 60, price: 2400, providers: ["kovbasa", "samoukova", "kashytska", "movchan", "kalashnik"] },
-  { id: "svc-35", name: "Пілінг ДЕКОЛЬТЕ BioRePeel", categoryId: "cat-3", durationMin: 60, price: 2200, providers: ["kovbasa", "samoukova", "kashytska", "movchan", "kalashnik"] },
-  { id: "svc-36", name: "Пілінг ОБЛИЧЧЯ та ДЕКОЛЬТЕ BioRePeel", categoryId: "cat-3", durationMin: 60, price: 3800, providers: ["kovbasa", "samoukova", "kashytska", "movchan", "kalashnik"] },
-  { id: "svc-37", name: "Пілінг ОБЛИЧЧЯ , ШИЯ та ДЕКОЛЬТЕ BioRePeel", categoryId: "cat-3", durationMin: 90, price: 5000, providers: ["kovbasa", "samoukova", "kashytska", "movchan", "kalashnik"] },
-  { id: "svc-38", name: "Ферментотерапія ОБЛИЧЧЯ та ШИЇ DMK Dane", categoryId: "cat-3", durationMin: 60, price: 3500, providers: ["kovbasa", "samoukova", "kashytska", "movchan", "kalashnik"] },
-  { id: "svc-39", name: "Ферментотерапія ОБЛИЧЧЯ, ШИЇ та ДЕКОЛЬТЕ DMK Dane", categoryId: "cat-3", durationMin: 60, price: 4000, providers: ["kovbasa", "samoukova", "kashytska", "movchan", "kalashnik"] },
-  { id: "svc-40", name: "Пілінг обличчя Quck peel", categoryId: "cat-3", durationMin: 60, price: 1900, providers: ["kovbasa", "samoukova", "kashytska", "movchan", "kalashnik"] },
-  { id: "svc-41", name: "Ретиноловий пілінг обличчя Lighening", categoryId: "cat-3", durationMin: 60, price: 2300, providers: ["kovbasa", "samoukova", "kashytska", "movchan", "kalashnik"] },
-  { id: "svc-42", name: "Пілінг ОБЛИЧЧЯ APPeex (ТСА 20%, ПДРН 5%, В12)", categoryId: "cat-3", durationMin: 60, price: 2500, providers: ["kovbasa", "samoukova", "kashytska", "movchan", "kalashnik"] },
-  { id: "svc-43", name: "Пілінг ШИЇ APPeex (ТСА 20%, ПДРН 5%, В12)", categoryId: "cat-3", durationMin: 60, price: 1400, providers: ["kovbasa", "samoukova", "kashytska", "movchan", "kalashnik"] },
-  { id: "svc-44", name: "Пілінг ДЕКОЛЬТЕ APPeex (ТСА 20%, ПДРН 5%, В12)", categoryId: "cat-3", durationMin: 60, price: 1900, providers: ["kovbasa", "samoukova", "kashytska", "movchan", "kalashnik"] },
-  { id: "svc-45", name: "Пілінг Обличчя Appeex strong (TCA 35%, ПДРН 5%, В12)", categoryId: "cat-3", durationMin: 60, price: 2800, providers: ["kovbasa", "samoukova", "kashytska", "movchan", "kalashnik"] },
-  { id: "svc-46", name: "Пілінг обличчя PRX-T33", categoryId: "cat-3", durationMin: 60, price: 2400, providers: ["kovbasa", "samoukova", "kashytska", "movchan", "kalashnik"] },
-  { id: "svc-47", name: "Пілінг обличчя Salicylic 20% gel peel image", categoryId: "cat-3", durationMin: 60, price: 1500, providers: ["kovbasa", "samoukova", "kashytska", "movchan", "kalashnik"] },
-  { id: "svc-48", name: "Пілінг Glycolic 50% gel peel image", categoryId: "cat-3", durationMin: 60, price: 1500, providers: ["kovbasa", "samoukova", "kashytska", "movchan", "kalashnik"] },
-  { id: "svc-49", name: "Молочний пілінг Medic8", categoryId: "cat-3", durationMin: 60, price: 2000, providers: ["kovbasa", "samoukova", "kashytska", "movchan", "kalashnik"] },
-  { id: "svc-50", name: "Полінуклеотиди TwAc eyes(1ml) (очі)", categoryId: "cat-4", durationMin: 60, price: 4500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-51", name: "Полінуклеотиди TwAc 2.0 (3ml)", categoryId: "cat-4", durationMin: 60, price: 7000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-52", name: "Полінуклеотиди TwAc 3.0 (3ml)", categoryId: "cat-4", durationMin: 60, price: 7300, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-53", name: "Нідосоми Revive NX", categoryId: "cat-4", durationMin: 60, price: 9000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-54", name: "Курс 3 процедури Нідосоми Revive NX", categoryId: "cat-4", durationMin: 60, price: 20950, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-55", name: "Полінуклеотиди Rejuran S", categoryId: "cat-4", durationMin: 60, price: 5000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-56", name: "Полінуклеотиди Rejuran I (очі)", categoryId: "cat-4", durationMin: 60, price: 5000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-57", name: "Полінуклеотиди Rejuran HB (1ml)", categoryId: "cat-4", durationMin: 60, price: 5000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-58", name: "Полінуклеотиди Rejuran healer (2ml)", categoryId: "cat-4", durationMin: 60, price: 7000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-59", name: "Полінуклеотиди Vitaran I (1ml)", categoryId: "cat-4", durationMin: 60, price: 5000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-60", name: "Полінуклеотиди Vitaran II (2ml)", categoryId: "cat-4", durationMin: 60, price: 7000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-61", name: "Полінуклеотиди Tox eye Face Collagen Vitaran(2ml) (обличчя, шия)", categoryId: "cat-4", durationMin: 60, price: 7000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-62", name: "Полінуклеотиди Whitening & Anti-Age Vitaran(2ml)", categoryId: "cat-4", durationMin: 60, price: 7000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-63", name: "Ботулінотерапія препаратом Dysport ЧОЛО+МІЖБРІВ'Я ЖІНОЧИЙ", categoryId: "cat-5", durationMin: 30, price: 6200, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-64", name: "Ботулінотерапія препаратом Dysport зони ЧОЛА ЖІНОЧИЙ", categoryId: "cat-5", durationMin: 30, price: 3400, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-65", name: "Ботулінотерапія препаратом Dysport зони МІЖБРІВ'Я ЖІНОЧИЙ", categoryId: "cat-5", durationMin: 30, price: 3400, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-66", name: "Ботулінотерапія препаратом Dysport зони «ГУСЯЧІ ЛАПКИ» ЖІНОЧИЙ", categoryId: "cat-5", durationMin: 30, price: 3400, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-67", name: "Ботулінотерапія препаратом Dysport зони НОСА ЖІНОЧИЙ", categoryId: "cat-5", durationMin: 30, price: 2200, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-68", name: "Ботулінотерапія препаратом Dysport зони ГІНГІВАЛЬНОЇ ПОСМІШКИ ЖІНОЧИЙ", categoryId: "cat-5", durationMin: 30, price: 2200, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-69", name: "Ботулінотерапія препаратом Dysport зони КИСЕТНИХ ЗМОРШОК ЖІНОЧИЙ", categoryId: "cat-5", durationMin: 30, price: 2200, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-70", name: "Ботулінотерапія препаратом Dysport зони ПІДБОРІДДЯ ЖІНОЧИЙ", categoryId: "cat-5", durationMin: 30, price: 2400, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-71", name: "Ботулінотерапія препаратом Dysport зони МАССЕТЕР ЖІНОЧИЙ", categoryId: "cat-5", durationMin: 30, price: 6000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-72", name: "Ботулінотерапія препаратом Dysport зони ПЛАТІЗМА ЖІНОЧИЙ", categoryId: "cat-5", durationMin: 30, price: 7500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-73", name: "Ботулінотерапія препаратом Dysport підняття кінчика носа ЖІНОЧИЙ", categoryId: "cat-5", durationMin: 30, price: 2200, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-74", name: "Бейбі ботох", categoryId: "cat-5", durationMin: 30, price: 10000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-75", name: "Full face", categoryId: "cat-5", durationMin: 30, price: 15600, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-76", name: "Шліфування обличчя ResurFX", categoryId: "cat-6", durationMin: 45, price: 6000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-77", name: "Лазерне шліфування зони щік ResurFX", categoryId: "cat-6", durationMin: 45, price: 4000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-78", name: "Лазерне шліфування зони шиї ResurFX", categoryId: "cat-6", durationMin: 45, price: 4000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-79", name: "Лазерне шліфування зони декольте ResurFX", categoryId: "cat-6", durationMin: 45, price: 5000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-80", name: "Лазерне шліфування зони обличчя, шия, декольте ResurFX", categoryId: "cat-6", durationMin: 60, price: 13000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-81", name: "Лазерна блефаропластика ResurFX", categoryId: "cat-6", durationMin: 45, price: 3000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-82", name: "Лазерне шліфування кистей рук ResurFX", categoryId: "cat-6", durationMin: 45, price: 3700, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-83", name: "Стрії розмір долоні", categoryId: "cat-6", durationMin: 45, price: 2500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-84", name: "Лазерне шліфування зони обличчя 1см кв.", categoryId: "cat-6", durationMin: 45, price: 700, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-85", name: "Лазерне шліфування зони тіла 1см кв.", categoryId: "cat-6", durationMin: 45, price: 700, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-86", name: "3д омолодження шкіри обличчя (термоліфтинг обличчя IPL Lumecca + лазерний душ обличчя ResurFX + пілінг обличчя Appeex peel)", categoryId: "cat-6", durationMin: 90, price: 8000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-87", name: "Лазерне шліфування зони спини повністю", categoryId: "cat-6", durationMin: 60, price: 13000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-88", name: "Чистка гідропілінг (гідрофлінг з алмазним пілінгом, чистка+ маска по проблематиці шкіри)", categoryId: "cat-7", durationMin: 90, price: 3200, providers: ["kalashnik"] },
-  { id: "svc-89", name: "Комбінована чистка обличчя + азелоїново-саліциловий пілінг обличчя", categoryId: "cat-7", durationMin: 90, price: 2000, providers: ["kalashnik"] },
-  { id: "svc-90", name: "Комбінована чистка спини + азелоїново-саліциловий пілінг спини", categoryId: "cat-7", durationMin: 120, price: 3500, providers: ["kalashnik"] },
-  { id: "svc-91", name: "Комбінована чистка спини", categoryId: "cat-7", durationMin: 90, price: 2500, providers: ["kalashnik"] },
-  { id: "svc-92", name: "Комбінована чистка обличчя + пілінг обличчя APPeex", categoryId: "cat-7", durationMin: 90, price: 3200, providers: ["kalashnik"] },
-  { id: "svc-93", name: "Комбінована чистка обличчя + пілінг обличчя BioRePeel", categoryId: "cat-7", durationMin: 90, price: 3200, providers: ["kalashnik"] },
-  { id: "svc-94", name: "Комбінована чистка обличчя Clear Choice", categoryId: "cat-7", durationMin: 90, price: 3000, providers: ["kalashnik"] },
-  { id: "svc-95", name: "Комбінована чистка обличчя + пілінг обличчя Quick Peel", categoryId: "cat-7", durationMin: 90, price: 2700, providers: ["kalashnik"] },
-  { id: "svc-96", name: "Комбінована чистка обличчя + фотоомолодження обличчя IPL Lumecca + пілінг обличчя BioRePeel", categoryId: "cat-7", durationMin: 90, price: 6000, providers: ["kalashnik"] },
-  { id: "svc-97", name: "Комбінована чистка обличчя + фотоомолодження обличчя IPL Lumecca + пілінг обличчя APPeex", categoryId: "cat-7", durationMin: 90, price: 7000, providers: ["kalashnik"] },
-  { id: "svc-98", name: "Комбінована чистка обличчя + ферментотерапія обличчя 1 маска", categoryId: "cat-7", durationMin: 90, price: 3900, providers: ["kalashnik"] },
-  { id: "svc-99", name: "Комбінована чистка обличчя + ферментотерапія обличчя повний протокол", categoryId: "cat-7", durationMin: 90, price: 5000, providers: ["kalashnik"] },
-  { id: "svc-100", name: "Комбінована чистка спини + Пілінг Acne Peel", categoryId: "cat-7", durationMin: 120, price: 5400, providers: ["kalashnik"] },
-  { id: "svc-101", name: "Масаж обличчя та зони декольте + лімфодренаж 30хв", categoryId: "cat-8", durationMin: 30, price: 1300, providers: ["kalashnik"] },
-  { id: "svc-102", name: "Масаж обличчя та зони декольте + лімфодренаж 60хв", categoryId: "cat-8", durationMin: 60, price: 2000, providers: ["kalashnik"] },
-  { id: "svc-103", name: "Масаж обличчя та зони декольте + лімфодренаж 90хв", categoryId: "cat-8", durationMin: 90, price: 2600, providers: ["kalashnik"] },
-  { id: "svc-104", name: "Масаж обличчя  для проблемної шкіри(гідропілінг+масаж), зони декольте  + лімфодренаж", categoryId: "cat-8", durationMin: 90, price: 5700, providers: ["kalashnik"] },
-  { id: "svc-105", name: "Гідропілінг на апараті EVE Ace of Face", categoryId: "cat-9", durationMin: 60, price: 1600, providers: ["kalashnik"] },
-  { id: "svc-106", name: "Мікротоки на апараті Eve Ace of Face", categoryId: "cat-9", durationMin: 60, price: 1400, providers: ["kalashnik"] },
-  { id: "svc-107", name: "Елктро міостимуляція EVE Ace of Face", categoryId: "cat-9", durationMin: 60, price: 1400, providers: ["kalashnik"] },
-  { id: "svc-108", name: "Супер комплекс (гідропілінг+ масаж+ мікротоки/EMS на вибір)", categoryId: "cat-9", durationMin: 60, price: 3700, providers: ["kalashnik"] },
-  { id: "svc-109", name: "Комплекс на ліфтинг (Масаж+ мікротоки/EMS на вибір)", categoryId: "cat-9", durationMin: 60, price: 2500, providers: ["kalashnik"] },
-  { id: "svc-110", name: "Супер комбо апаратні (гідропілінг з алмазним пілінгом+ мікротоки+ EMS)", categoryId: "cat-9", durationMin: 60, price: 3700, providers: ["kalashnik"] },
-  { id: "svc-111", name: "Ботулінотерапія препаратом Dysport зони ЧОЛА ЧОЛОВІЧИЙ", categoryId: "cat-10", durationMin: 30, price: 4000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-112", name: "Ботулінотерапія препаратом Dysport зони МІЖБРІВ'Я ЧОЛОВІЧИЙ", categoryId: "cat-10", durationMin: 30, price: 4000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-113", name: "Ботулінотерапія препаратом Dysport  ЧОЛА+МІЖБРІВ'Я  ЧОЛОВІЧИЙ", categoryId: "cat-10", durationMin: 30, price: 7300, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-114", name: "Ботулінотерапія препаратом Dysport «ГУСЯЧІ ЛАПКИ» ЧОЛОВІЧИЙ", categoryId: "cat-10", durationMin: 30, price: 3900, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-115", name: "Ботулінотерапія препаратом Dysport НОСА ЧОЛОВІЧИЙ", categoryId: "cat-10", durationMin: 30, price: 2600, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-116", name: "Ботулінотерапія препаратом Dysport ГІНГІВАЛЬНОЇ ПОСМІШКИ ЧОЛОВІЧИЙ", categoryId: "cat-10", durationMin: 30, price: 2600, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-117", name: "Ботулінотерапія препаратом Dysport КИСЕТНИХ ЗМОРШОК ЧОЛОВІЧИЙ", categoryId: "cat-10", durationMin: 30, price: 2600, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-118", name: "Ботулінотерапія препаратом Dysport ПІДБОРІДДЯ ЧОЛОВІЧИЙ", categoryId: "cat-10", durationMin: 30, price: 3000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-119", name: "Ботулінотерапія препаратом Dysport МАССЕТЕР  ЧОЛОВІЧИЙ", categoryId: "cat-10", durationMin: 30, price: 7300, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-120", name: "Ботулінотерапія препаратом Dysport ПЛАТІЗМА  ЧОЛОВІЧИЙ", categoryId: "cat-10", durationMin: 30, price: 9600, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-121", name: "Ботулінотерапія препаратом Dysport підняття кінчика носа ЧОЛОВІЧИЙ", categoryId: "cat-10", durationMin: 30, price: 2500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-122", name: "Лікування Гіпергідрозу ПАХВ препаратом Dysport ЖІНОЧИЙ", categoryId: "cat-11", durationMin: 30, price: 10500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-123", name: "Лікування Гіпергідрозу СТУПНЕЙ препаратом Dysport ЖІНОЧИЙ", categoryId: "cat-11", durationMin: 30, price: 10500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-124", name: "Лікування Гіпергідрозу ДОЛОНЕЙ препаратом Dysport ЖІНОЧИЙ", categoryId: "cat-11", durationMin: 30, price: 10500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-125", name: "Лікування Гіпергідрозу ПАХВ препаратом Neuranox ЖІНОЧИЙ", categoryId: "cat-11", durationMin: 30, price: 9000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-126", name: "Лікування Гіпергідрозу СТУПНЕЙ препаратом Neuranox ЖІНОЧИЙ", categoryId: "cat-11", durationMin: 30, price: 9000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-127", name: "Лікування Гіпергідрозу ДОЛОНЕЙ препаратом Neuranox ЖІНОЧИЙ", categoryId: "cat-11", durationMin: 30, price: 9000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-128", name: "Лікування Гіпергідрозу ПАХВ препаратом Dysport ЧОЛОВІЧИЙ", categoryId: "cat-12", durationMin: 30, price: 13000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-129", name: "Лікування Гіпергідрозу СТУПНЕЙ препаратом Dysport ЧОЛОВІЧИЙ", categoryId: "cat-12", durationMin: 30, price: 13000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-130", name: "Лікування Гіпергідрозу ДОЛОНЕЙ препаратом Dysport ЧОЛОВІЧИЙ", categoryId: "cat-12", durationMin: 30, price: 13000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-131", name: "Лікування Гіпергідрозу ПАХВ препаратом Neuranox ЧОЛОВІЧИЙ", categoryId: "cat-12", durationMin: 30, price: 11500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-132", name: "Лікування Гіпергідрозу СТУПНЕЙ препаратом Neuranox ЧОЛОВІЧИЙ", categoryId: "cat-12", durationMin: 30, price: 11500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-133", name: "Лікування Гіпергідрозу ДОЛОНЕЙ препаратом Neuranox ЧОЛОВІЧИЙ", categoryId: "cat-12", durationMin: 30, price: 11500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-134", name: "Лікування мігрені препаратом Диспорт", categoryId: "cat-13", durationMin: 30, price: 13000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-135", name: "Teosyal PureSens Redencity 1", categoryId: "cat-14", durationMin: 60, price: 9000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-136", name: "Інєкції амінокислоти у зону обличчя Jalupro HMW 3ml", categoryId: "cat-14", durationMin: 60, price: 6500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-137", name: "Інєкції амінокислоти у зону обличчя Jalupro classic 6ml", categoryId: "cat-14", durationMin: 60, price: 7100, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-138", name: "Інєкції амінокислоти у зону обличчяJalupro classic 3ml", categoryId: "cat-14", durationMin: 60, price: 4000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-139", name: "Інєкції амінокислоти у зону очей препаратом Jalupro Young Eye 1мл", categoryId: "cat-14", durationMin: 60, price: 7000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-140", name: "Інєкції амінокислоти у зону обличчя препаратом Jalupro Super Hydro 2.5мл", categoryId: "cat-14", durationMin: 60, price: 8500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-141", name: "Аугеметація губ препаратом Phillex fine lips (1,1 ml)", categoryId: "cat-15", durationMin: 60, price: 7500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-142", name: "Аугеметація губ препаратом Phillex deep plus(1,1 ml)", categoryId: "cat-15", durationMin: 60, price: 7800, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-143", name: "Аугеметація губ препаратом Teosyal RHA kiss(0,7ml)", categoryId: "cat-15", durationMin: 60, price: 8000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-144", name: "Аугеметація губ препаратом Teosyal RHA 2(1ml)", categoryId: "cat-15", durationMin: 60, price: 8500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-145", name: "Аугеметація губ препаратом Teosyal RHA 3(1ml)", categoryId: "cat-15", durationMin: 60, price: 9000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-146", name: "Аугеметація губ препаратом Teosyal kiss(1ml)", categoryId: "cat-15", durationMin: 60, price: 9500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-147", name: "Аугеметація губ препаратом Louna (1.1ml)", categoryId: "cat-15", durationMin: 60, price: 7500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-148", name: "Розчинення філера в губах препаратом PB Serum", categoryId: "cat-17", durationMin: 60, price: 2500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-149", name: "Контурна пластика ПІДБОРІДДЯ препаратом Phillex sab- Q(1,1ml)", categoryId: "cat-18", durationMin: 60, price: 8000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-150", name: "Контурна пластика СКУЛ препаратом Phillex sab- Q(1,1ml)", categoryId: "cat-18", durationMin: 60, price: 8000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-151", name: "Контурна пластика Скул+підборіддя 2 мл", categoryId: "cat-18", durationMin: 60, price: 14000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-152", name: "Контурна пластика Скул+підборіддя 3 мл", categoryId: "cat-18", durationMin: 60, price: 20000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-153", name: "Контурна пластика ПІДБОРІДДЯ препаратом Teosyal 4 (1ml)", categoryId: "cat-18", durationMin: 60, price: 9500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-154", name: "Контурна пластика СКУЛ препаратом Teosyal 4 (1ml)", categoryId: "cat-18", durationMin: 60, price: 9500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-155", name: "Контурна пластика ПІДБОРІДДЯ препаратом Teosyal puresense ultra deep(1,2ml)", categoryId: "cat-18", durationMin: 60, price: 9700, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-156", name: "Колагеностимуляція зони ОБЛИЧЧЯ препаратом Rediesse", categoryId: "cat-20", durationMin: 60, price: 13000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-157", name: "Колагеностимуляція зони ШИЇ препаратом Rediesse", categoryId: "cat-20", durationMin: 60, price: 13000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-158", name: "Колагеностимуляція зони ОБЛИЧЧЯ препаратом Rediesse 2 шприці", categoryId: "cat-20", durationMin: 60, price: 23000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-159", name: "Колагеностимуляція зони ОБЛИЧЧЯ препаратом Karisma", categoryId: "cat-20", durationMin: 60, price: 9000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-160", name: "Колагеностимуляція зони ШИЇ препаратом Karisma", categoryId: "cat-20", durationMin: 60, price: 9000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-161", name: "Ін'єкції полімолочної кислоти Juve Look у зону ОЧЕЙ", categoryId: "cat-20", durationMin: 60, price: 8500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-162", name: "Ін'єкції полімолочної кислоти Juve Look у зону ШИЇ", categoryId: "cat-20", durationMin: 60, price: 10000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-163", name: "Ін'єкції полімолочної кислоти Juve Look у зону ОБЛИЧЧЯ", categoryId: "cat-20", durationMin: 60, price: 11000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-164", name: "Ін'єкції полімолочної кислоти Juve Look у зону ДЕКОЛЬТЕ", categoryId: "cat-20", durationMin: 60, price: 11000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-165", name: "Ін'єкції полімолочної кислоти Juve Look у зону ОБЛИЧЧЯ та ДЕКОЛЬТЕ", categoryId: "cat-20", durationMin: 60, price: 16500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-166", name: "Ін'єкції полімолочної кислоти Juve Look у зону ОБЛИЧЧЯ та ОЧІ", categoryId: "cat-20", durationMin: 60, price: 14300, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-167", name: "Ін'єкції полімолочної кислоти Juve Look у зону ОБЛИЧЧЯ та ШИЇ", categoryId: "cat-20", durationMin: 60, price: 16500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-168", name: "Ін'єкції полімолочної кислоти Juve Look у зону ОБЛИЧЧЯ, ШИЯ та ОЧІ", categoryId: "cat-20", durationMin: 60, price: 19800, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-169", name: "Lenisna 1фл", categoryId: "cat-20", durationMin: 60, price: 16000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-170", name: "ZQ-II полі L-молочна кислота 1шп", categoryId: "cat-20", durationMin: 60, price: 13000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-171", name: "Заповнення зморшок в зоні ОБЛИЧЧЯ препаратом на основі гіалуронової кислоти Belotero soft (1мл)", categoryId: "cat-21", durationMin: 60, price: 8000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-172", name: "Заповнення зморшок в зоні ШИЇ препаратом на основі гіалуронової кислоти Belotero soft (1мл)", categoryId: "cat-21", durationMin: 60, price: 8000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-173", name: "Заповнення зморшок навколо зони ОЧЕЙ препаратом на основі гіалуронової кислоти Belotero soft (1мл)", categoryId: "cat-21", durationMin: 60, price: 8000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-174", name: "Заповнення зморшок в зоні ОБЛИЧЧЯ препаратом на основі гіалуронової кислоти Belotero balance (1мл)", categoryId: "cat-21", durationMin: 60, price: 8500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-175", name: "Заповнення зморшок в зоні ШИЇ препаратом на основі гіалуронової кислоти Belotero balance (1мл)", categoryId: "cat-21", durationMin: 60, price: 8500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-176", name: "Заповнення заломів з зоні НОСОСЛІЗНОЇ борозди препаратом Teosyal Redensity 2", categoryId: "cat-21", durationMin: 60, price: 9000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-177", name: "Лікування андрогенетичної алопеції препаратом DUTABIOT", categoryId: "cat-22", durationMin: 60, price: 4300, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-178", name: "Стимуляція росту волосся голови препаратом Biocascad", categoryId: "cat-22", durationMin: 60, price: 4500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-179", name: "Плазмотерапія шкіри голови 1 пробірка", categoryId: "cat-22", durationMin: 60, price: 3200, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-180", name: "Плазмотерапія шкіри голови 2 пробірки", categoryId: "cat-22", durationMin: 60, price: 3900, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-181", name: "Плазмотерапія шкіри голови 4 пробірки", categoryId: "cat-22", durationMin: 60, price: 5300, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-182", name: "IPL Lumecca шия", categoryId: "cat-23", durationMin: 30, price: 2600, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-183", name: "IPL Lumecca декольте", categoryId: "cat-23", durationMin: 30, price: 3000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-184", name: "IPL Lumecca обличчя та шия", categoryId: "cat-23", durationMin: 30, price: 5400, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-185", name: "Фотоомолодження зони ОБЛИЧЧЯ, ШИЇ та ДЕКОЛЬТЕ IPL Lumecca", categoryId: "cat-23", durationMin: 30, price: 6500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-186", name: "Фотоомолодження зони плечей IPL Lumecca", categoryId: "cat-23", durationMin: 30, price: 4000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-187", name: "Фотоомолодження спини IPL Lumecca", categoryId: "cat-23", durationMin: 30, price: 5500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-188", name: "Фотоомолодження спини та плечей IPL Lumecca", categoryId: "cat-23", durationMin: 30, price: 7500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-189", name: "Фотоомолодження зони грудей IPL Lumecca", categoryId: "cat-23", durationMin: 30, price: 4000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-190", name: "Фотоомолодження кистей рук IPL Lumecca", categoryId: "cat-23", durationMin: 30, price: 3000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-191", name: "Фотоомолодження зони рук до ліктя IPL Lumecca", categoryId: "cat-23", durationMin: 30, price: 4500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-192", name: "Фотоомолодження рук повністю IPL Lumecca", categoryId: "cat-23", durationMin: 30, price: 5500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-193", name: "Фотоомолодження 1см2 тіла IPL Lumecca", categoryId: "cat-23", durationMin: 30, price: 800, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-194", name: "Мікроголковий RF ліфтинг обличчя Morpheus8", categoryId: "cat-24", durationMin: 90, price: 14000, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-195", name: "Мікроголковий RF ліфтинг зони очей, щок та підборіддя Morpheus8", categoryId: "cat-24", durationMin: 90, price: 10500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-196", name: "Мікроголковий RF ліфтинг зони декольте Morpheus8", categoryId: "cat-24", durationMin: 90, price: 11600, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-197", name: "Мікроголковий RF ліфтинг зони шиї Morpheus8", categoryId: "cat-24", durationMin: 90, price: 11600, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-198", name: "Мікроголковий RF ліфтинг зони обличчя та шиї Morpheus8", categoryId: "cat-24", durationMin: 90, price: 17600, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-199", name: "Мікроголковий RF ліфтинг зони обличчя, шиї та декольте Morpheus8", categoryId: "cat-24", durationMin: 90, price: 19800, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-200", name: "Екзосоми", categoryId: "cat-24", durationMin: 90, price: 7500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-201", name: "Мікроголковий RF ліфтинг зони ГРУДЕЙ Morpheus8", categoryId: "cat-25", durationMin: 90, price: 16500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-202", name: "Мікроголковий RF ліфтинг зони ЖИВОТА Morpheus8", categoryId: "cat-25", durationMin: 90, price: 16500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-203", name: "Мікроголковий RF ліфтинг БОКОВОЇ ЗОНИ ТАЛІЇ Morpheus8", categoryId: "cat-25", durationMin: 90, price: 16500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-204", name: "Мікроголковий RF ліфтинг зони КОЛІН Morpheus8", categoryId: "cat-25", durationMin: 90, price: 16500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-205", name: "Мікроголковий RF ліфтинг зони РУК ДО ЛІКТЯ Morpheus8", categoryId: "cat-25", durationMin: 90, price: 16500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-206", name: "Мікроголковий RF ліфтинг зони ВЕРХНЯ ТРЕТИНА Morpheus8", categoryId: "cat-25", durationMin: 90, price: 16500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-207", name: "Мікроголковий RF ліфтинг зони НИЖНЯ ТРЕТИНА Morpheus8", categoryId: "cat-25", durationMin: 90, price: 16500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-208", name: "Мікроголковий RF ліфтинг зони ВНУТРІШНЬОЇ ПОВЕРХНі СТЕГНА Morpheus8", categoryId: "cat-25", durationMin: 90, price: 16500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-209", name: "Мікроголковий RF ліфтинг зони ЗОВНІШНЬОЇ ПОВЕРХНі СТЕГНА Morpheus8", categoryId: "cat-25", durationMin: 90, price: 16500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-210", name: "Мікроголковий RF ліфтинг зони СІДНИЦЬ Morpheus8", categoryId: "cat-25", durationMin: 90, price: 16500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-211", name: "Мікроголковий RF ліфтинг тіла Morpheus8 2 зони на вибір", categoryId: "cat-25", durationMin: 90, price: 27500, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-212", name: "Ін'єкція ліполітика Тріада pb serum в зону ПІДБОРІДДЯ", categoryId: "cat-26", durationMin: 30, price: 4800, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-213", name: "Ін'єкція ліполітика Тріада pb serum в зону ЩОК", categoryId: "cat-26", durationMin: 30, price: 4800, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-214", name: "Ін'єкція ліполітика Тріада pb serum в зону ЖИВОТА", categoryId: "cat-26", durationMin: 30, price: 4800, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-215", name: "Ін'єкція ліполітика Тріада pb serum в зону над КОЛІНАМИ", categoryId: "cat-26", durationMin: 30, price: 4800, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-  { id: "svc-216", name: "Ін'єкція ліполітика Тріада pb serum в зону ПЛЕЧА", categoryId: "cat-26", durationMin: 30, price: 4800, providers: ["kovbasa", "samoukova", "kashytska", "movchan"] },
-];
+export const CATALOG_CATEGORIES: Category[] = Object.entries(data["_довідка_категорії"]).map(
+  ([id, name], order) => ({ id, name, order }),
+);
 
-/** Service duration (min) by id. */
+export const CATALOG_SERVICES: Service[] = data.priceItems.map((it) => ({
+  id: it.id,
+  name: it.name,
+  categoryId: it.group_id,
+  durationMin: Math.max(...Object.values(it.items)),
+  price: Number(it.price),
+  specialistIds: Object.keys(it.items),
+}));
+
+const durationById = new Map(CATALOG_SERVICES.map((s) => [s.id, s.durationMin]));
+
+/** Тривалість послуги (хв) за id; для обчислення time_end при створенні візиту. */
 export function catalogDurationMin(serviceId: string): number | undefined {
-  return CATALOG_SERVICES.find((s) => s.id === serviceId)?.durationMin;
+  return durationById.get(serviceId);
 }
